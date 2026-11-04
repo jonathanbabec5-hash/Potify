@@ -1,0 +1,28 @@
+kind = "web"
+previewPath = "/"
+title = "POTIFY: A Wonderful High Life"
+description = "An original cozy 3D rooftop cultivation life simulation set in a walkable POTIFY neighborhood. Explore, meet neighbors, grow fictional plants, and trade virtual harvest for simulated simSOL. Local saved progress, no real currency or token transactions."
+version = "1.0.0"
+id = "artifacts/potify-high-life"
+router = "path"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 23866
+
+[services.development]
+run = "pnpm --filter @workspace/potify-high-life run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/potify-high-life", "run", "build" ]
+serve = "static"
+publicDir = "artifacts/potify-high-life/dist/public"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "23866"
+BASE_PATH = "/"
