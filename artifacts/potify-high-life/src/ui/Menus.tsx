@@ -592,6 +592,7 @@ function Pause() {
     ['Settings', () => openModal({ type: 'settings' }), 'O'],
     ['Roadmap', () => openModal({ type: 'roadmap' }), ''],
     ['Save game', () => act(() => game.save()), ''],
+    ['City Devlog', () => { game.save(); window.location.assign(`${import.meta.env.BASE_URL}devlog/`); }, ''],
     ['Title screen', () => { game.save(); ui.set({ modal: null, inGame: false }); }, ''],
   ];
   return (

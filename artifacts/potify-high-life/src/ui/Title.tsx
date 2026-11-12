@@ -63,6 +63,12 @@ export function Title() {
               <p className="text-xs font-bold text-muted-foreground mt-4 leading-relaxed">
                 Fictional, cannabis-themed simulation for adults. simSOL is play money with no real value. Saves stay in this browser only.
               </p>
+              <a
+                href={`${import.meta.env.BASE_URL}devlog/`}
+                className="mt-4 inline-flex min-h-11 items-center justify-center rounded-xl border-2 border-ink/20 px-4 py-2 text-sm font-black text-foreground underline-offset-4 hover:underline focus-visible:outline focus-visible:outline-3 focus-visible:outline-offset-2 focus-visible:outline-foreground"
+              >
+                City Devlog · Build in Public
+              </a>
             </div>
           )}
 
