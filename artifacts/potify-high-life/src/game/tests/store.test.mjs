@@ -112,3 +112,93 @@ test('corrupt local saves remain intact and visibly report an error', async () =
   assert.equal(broken.game.getState().saveError, null);
   assert.equal(JSON.parse(localStorage.getItem(SAVE_KEY)).name, 'Fresh start');
 });
+
+test('legacy saves can start The Lease and carry their first sale into the story', async () => {
+  localStorage.removeItem(SAVE_KEY);
+  const { game: beforeUpdate } = await import('../store.ts?before-story');
+  beforeUpdate.start();
+  beforeUpdate.plant(0, 'sunhaze');
+  beforeUpdate.water(0);
+  for (let i = 0; i < 364; i++) beforeUpdate.tick(0.25);
+  beforeUpdate.harvest(0);
+  beforeUpdate.sellAll();
+  const original = beforeUpdate.getState();
+  assert.ok(original.quest.sold);
+  const { story: _story, ...legacy } = original;
+  localStorage.setItem(SAVE_KEY, JSON.stringify(legacy));
+  const { game: migrated } = await import('../store.ts?legacy-story');
+  assert.equal(migrated.getState().saveError, null);
+  assert.equal(migrated.getState().totalSold, original.totalSold);
+  assert.deepEqual(migrated.getState().quest, original.quest);
+  assert.deepEqual(migrated.getState().plots, original.plots);
+  assert.deepEqual(migrated.getState().story.tasks, { latch: 'available', signal: 'available', ledger: 'available' });
+
+  migrated.readStoryItem('latch');
+  assert.equal(migrated.getState().story.tasks.latch, 'found', 'an early discovery is recorded');
+  assert.equal(migrated.chooseStoryReply('moss', 'return-latch'), null, 'the lease opens the jobs');
+  migrated.readStoryItem('lease');
+  assert.ok(migrated.chooseStoryReply('mira', 'ask-moss'));
+  assert.equal(migrated.chooseStoryReply('mira', 'ask-jun'), null, 'the chosen lead stays on file');
+  assert.equal(migrated.chooseStoryReply('jun', 'return-latch'), null, 'only Moss can close this job');
+  assert.equal(migrated.chooseStoryReply('mira', 'file-lease'), null, 'a sale alone cannot close the lease');
+  const supplies = migrated.getState().supplies;
+  assert.ok(migrated.chooseStoryReply('moss', 'return-latch'));
+  migrated.readStoryItem('latch');
+  assert.equal(migrated.chooseStoryReply('moss', 'return-latch'), null);
+  assert.equal(migrated.getState().supplies, supplies + 1);
+  assert.ok(migrated.chooseStoryReply('mira', 'file-lease'));
+  assert.equal(migrated.getState().story.filed, true);
+  assert.equal(migrated.chooseStoryReply('mira', 'file-lease'), null);
+  const { game: reloaded } = await import('../store.ts?legacy-story-finished');
+  assert.deepEqual(reloaded.getState().story, migrated.getState().story);
+  assert.equal(reloaded.getState().supplies, supplies + 1);
+});
+
+test('Jun’s route requires a real in-game sale and each side job pays once', async () => {
+  localStorage.removeItem(SAVE_KEY);
+  const { game: fresh } = await import('../store.ts?jun-story');
+  fresh.start({ name: 'Night grower' });
+  fresh.readStoryItem('lease');
+  assert.ok(fresh.chooseStoryReply('mira', 'ask-jun'));
+  assert.ok(fresh.chooseStoryReply('jun', 'accept-signal'));
+  assert.equal(fresh.chooseStoryReply('jun', 'return-signal'), null);
+  fresh.readStoryItem('signal');
+  const balance = fresh.getState().money;
+  assert.ok(fresh.chooseStoryReply('jun', 'return-signal'));
+  assert.equal(fresh.chooseStoryReply('jun', 'return-signal'), null);
+  assert.equal(fresh.getState().money, balance + 3);
+
+  assert.ok(fresh.chooseStoryReply('mira', 'accept-ledger'));
+  fresh.readStoryItem('ledger');
+  assert.ok(fresh.chooseStoryReply('mira', 'return-ledger'));
+  fresh.readStoryItem('ledger');
+  assert.equal(fresh.chooseStoryReply('mira', 'return-ledger'), null);
+  assert.equal(fresh.getState().seeds.moonmint, 1);
+  assert.equal(fresh.chooseStoryReply('mira', 'file-lease'), null);
+
+  fresh.plant(0, 'sunhaze');
+  fresh.water(0);
+  for (let i = 0; i < 364; i++) fresh.tick(0.25);
+  fresh.harvest(0);
+  fresh.sellAll();
+  assert.ok(fresh.chooseStoryReply('mira', 'file-lease'));
+  const { game: reloaded } = await import('../store.ts?jun-story-finished');
+  assert.equal(reloaded.getState().story.lead, 'jun');
+  assert.equal(reloaded.getState().story.filed, true);
+  assert.equal(reloaded.getState().story.tasks.latch, 'available', 'the other route remains optional');
+  assert.equal(reloaded.getState().seeds.moonmint, 1);
+  assert.equal(reloaded.chooseStoryReply('jun', 'return-signal'), null, 'reload cannot pay a reward twice');
+});
+
+test('invalid story data is preserved for recovery', async () => {
+  const invalid = JSON.parse(localStorage.getItem(SAVE_KEY));
+  invalid.story.tasks.signal = 'rewarded';
+  const raw = JSON.stringify(invalid);
+  localStorage.setItem(SAVE_KEY, raw);
+  const { game: broken } = await import('../store.ts?corrupt-story');
+  assert.ok(broken.getState().saveError);
+  broken.readStoryItem('lease');
+  assert.equal(broken.chooseStoryReply('mira', 'ask-jun'), null);
+  broken.save();
+  assert.equal(localStorage.getItem(SAVE_KEY), raw);
+});

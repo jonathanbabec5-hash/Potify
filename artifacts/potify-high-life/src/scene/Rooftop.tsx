@@ -1,6 +1,7 @@
 import { useMemo } from 'react';
 import { RoundedBox } from '@react-three/drei';
 import { useUI } from '@/game/runtime';
+import { STORY_POSITIONS } from '@/game/world';
 import { glassMat, lampMat, mat, seeded, signTex, tileTex, windowMat } from '@/scene/materials';
 import { Beds } from '@/scene/Plants';
 
@@ -109,6 +110,17 @@ export function Rooftop() {
         <mesh position={[-6, 0.4, -8.4]} material={mat('#c7774f')}><boxGeometry args={[1.2, 0.8, 0.6]} /></mesh>
         <mesh position={[-6, 0.98, -8.4]} material={mat('#f2703f')}><boxGeometry args={[0.7, 0.36, 0.3]} /></mesh>
         <mesh position={[-5.75, 1.0, -8.24]} material={lampMat}><cylinderGeometry args={[0.1, 0.1, 0.02, 10]} /></mesh>
+        <group position={[STORY_POSITIONS.lease[0], 0, STORY_POSITIONS.lease[1]]}>
+          <mesh position={[0, 0.43, 0]} material={mat('#6c4c37')} castShadow><boxGeometry args={[0.9, 0.86, 0.68]} /></mesh>
+          <mesh position={[0, 0.9, 0]} material={mat('#926849')}><boxGeometry args={[0.96, 0.1, 0.74]} /></mesh>
+          <mesh position={[0, 0.965, 0.02]} rotation-y={0.22} material={mat('#eed7a9')}><boxGeometry args={[0.58, 0.025, 0.39]} /></mesh>
+          <mesh position={[0, 0.99, 0.03]} material={mat('#a55244')}><cylinderGeometry args={[0.065, 0.065, 0.026, 8]} /></mesh>
+        </group>
+        <group position={[STORY_POSITIONS.signal[0], 0, STORY_POSITIONS.signal[1]]}>
+          <mesh position={[0, 0.32, 0]} material={mat('#73503c')} castShadow><boxGeometry args={[0.64, 0.64, 0.58]} /></mesh>
+          <mesh position={[0, 0.69, 0]} rotation-y={-0.2} material={mat('#564660')}><boxGeometry args={[0.48, 0.09, 0.38]} /></mesh>
+          <mesh position={[0.04, 0.69, 0.17]} material={mat('#f2dfbb')}><boxGeometry args={[0.35, 0.06, 0.05]} /></mesh>
+        </group>
         <mesh position={[-7, 0.03, -5]} rotation-x={-Math.PI / 2} material={mat('#ef6f7c')}><circleGeometry args={[1.4, 8]} /></mesh>
       </group>
 
@@ -128,6 +140,11 @@ export function Rooftop() {
           <mesh key={`${x}${z}`} position={[x, 1.4, z]} material={mat('#1f9e89')}><boxGeometry args={[0.16, 2.8, 0.16]} /></mesh>
         )))}
         <mesh position={[7, 2.75, -2.15]} material={mat('#1f9e89')}><boxGeometry args={[2.2, 0.2, 0.2]} /></mesh>
+        <group position={[STORY_POSITIONS.latch[0], 1.12, STORY_POSITIONS.latch[1]]}>
+          <mesh material={mat('#9a6d39', 0.56)}><boxGeometry args={[0.25, 0.28, 0.08]} /></mesh>
+          <mesh position={[-0.03, 0.025, 0.06]} rotation-z={Math.PI / 2} material={mat('#e8b35c', 0.42)}><cylinderGeometry args={[0.055, 0.055, 0.33, 8]} /></mesh>
+          <mesh position={[-0.205, 0.025, 0.06]} material={mat('#e8b35c', 0.42)}><torusGeometry args={[0.07, 0.018, 5, 10]} /></mesh>
+        </group>
         {!inGh && (
           <mesh position={[7, 3.1, -5.5]} rotation-z={Math.PI / 2} material={glassMat}>
             <cylinderGeometry args={[0.9, 0.9, 7.9, 3, 1, false]} />

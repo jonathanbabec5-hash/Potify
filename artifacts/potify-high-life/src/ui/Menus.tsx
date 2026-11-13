@@ -1,7 +1,8 @@
 import { useState } from 'react';
-import { Droplets, Heart, Leaf, Lock, Moon, Package, Save, Scissors, Sparkles, Sprout } from 'lucide-react';
+import { BookOpen, Droplets, Heart, Leaf, Lock, Moon, Package, Save, Scissors, Sparkles, Sprout } from 'lucide-react';
 import { ECONOMY, SEEDS, UPGRADES, game, harvestValue, objective, formatTime } from '@/game/store';
-import { act, closeModal, fx, openModal, player, ui, useG, useUI, type NpcId, type ShopId } from '@/game/runtime';
+import { act, closeModal, fx, openModal, player, toast, ui, useG, useUI, type NpcId, type ShopId } from '@/game/runtime';
+import { FILED_NOTES, SIDE_TASKS, STORY_PAGES, storyChoices, storyLine, storyObjective, type SideTask, type StoryPage } from '@/game/story';
 import { BEDS, NPCS, SHOPS, npcSchedule } from '@/game/world';
 import { doSleep } from '@/game/interact';
 import { sfx } from '@/game/audio';
@@ -18,6 +19,8 @@ export function Modals() {
     case 'bed': return <BedPanel index={modal.index} />;
     case 'shop': return <ShopPanel shop={modal.shop} />;
     case 'talk': return <Talk npc={modal.npc} line={modal.line} />;
+    case 'field-notes': return <FieldNotes />;
+    case 'story-page': return <StoryPagePanel page={modal.page} fromNotes={modal.fromNotes} />;
     case 'inventory': return <Inventory />;
     case 'map': return <MapPanel />;
     case 'calendar': return <Calendar />;
@@ -285,14 +288,18 @@ function Talk({ npc, line }: { npc: NpcId; line: string }) {
   const def = NPCS[npc];
   const f = useG(s => s.friendship[npc] ?? 0);
   const obj = useG(s => objective(s));
+  const { story, sold } = useG(s => ({ story: s.story, sold: s.quest.sold }));
+  const [reply, setReply] = useState<string>();
+  const choices = storyChoices(story, npc, sold);
+  const dialogue = reply ?? storyLine(story, npc, sold) ?? line;
   const hearts = Math.min(5, Math.floor(f / 1));
   return (
     <Sheet title={def.name} kicker={def.role} accent="bg-butter" test="modal-talk">
       <div className="flex gap-4">
-        <div className="shrink-0"><AvatarFigure shirt={def.shirt} skin={def.skin} size={76} /></div>
+        <div className="shrink-0"><AvatarFigure shirt={def.shirt} skin={def.skin} size={76} variant={npc} /></div>
         <div className="flex-1">
-          <div className="relative rounded-2xl border-[2.5px] border-ink bg-white/70 p-3 font-bold leading-relaxed" data-testid="text-dialogue">
-            {line || `${def.name} smiles and waves.`}
+          <div className="relative rounded-2xl border-[2.5px] border-ink bg-white/70 p-3 font-bold leading-relaxed" data-testid="text-dialogue" aria-live="polite">
+            {dialogue || `${def.name} smiles and waves.`}
           </div>
           <div className="flex items-center gap-1 mt-3" data-testid="text-friendship">
             {Array.from({ length: 5 }).map((_, i) => <Heart key={i} className={`w-5 h-5 ${i < hearts ? 'fill-coral text-ink' : 'text-ink/30'}`} />)}
@@ -300,12 +307,95 @@ function Talk({ npc, line }: { npc: NpcId; line: string }) {
           </div>
         </div>
       </div>
+      {choices.length > 0 && (
+        <div className="mt-4 grid gap-2">
+          {choices.map(choice => (
+            <button key={choice.id} className="chunk bg-cream px-3 py-2 text-left" data-testid={`story-${choice.id}`}
+              onClick={() => {
+                const change = game.chooseStoryReply(npc, choice.id);
+                if (!change) return;
+                setReply(change.reply);
+                toast(change.message);
+                sfx.talk();
+              }}>
+              {choice.label}
+            </button>
+          ))}
+        </div>
+      )}
+      {npc === 'mira' && story.filed && (
+        <button className="chunk bg-jade text-cream w-full py-2 mt-4" onClick={() => openModal({ type: 'story-page', page: 'filed' })}>
+          Read A Missing Season
+        </button>
+      )}
       <div className="mt-4 rounded-xl bg-muted p-3 text-sm font-bold">
         <span className="text-jade font-black uppercase text-xs tracking-wider">Tip</span>
         <p>{npc === 'mira' ? `Next for you: ${obj.title}. ${obj.description}` : npc === 'moss' ? 'Soil bags cost a little but a nourished bed stays healthy longer.' : 'Green Exchange buys harvests. Higher quality, better simSOL.'}</p>
       </div>
       <p className="text-xs font-bold text-muted-foreground mt-3">Friendship grows once per day when you stop by to chat.</p>
       <button className="chunk w-full bg-tangerine text-cream py-3 mt-3" onClick={() => closeModal()} data-testid="button-bye">See you around</button>
+    </Sheet>
+  );
+}
+
+function FieldNotes() {
+  const { story, sold } = useG(s => ({ story: s.story, sold: s.quest.sold }));
+  const ids = Object.keys(SIDE_TASKS) as SideTask[];
+  const pages: StoryPage[] = [];
+  if (story.leaseRead) pages.push('lease');
+  pages.push(...ids.filter(id => story.tasks[id] === 'found' || story.tasks[id] === 'complete'));
+  if (story.filed) pages.push('filed');
+  const jobs = ids.filter(id => story.tasks[id] !== 'available');
+  return (
+    <Sheet title="Field notes" kicker="Canopy Quarter" accent="bg-jade" test="modal-field-notes">
+      <div className="rounded-2xl border-[2.5px] border-ink bg-butter/40 p-4">
+        <p className="font-display text-xl">The Lease</p>
+        <p className="mt-1 text-sm font-bold">{storyObjective(story, sold)}</p>
+      </div>
+      {jobs.length > 0 && (
+        <>
+          <h3 className="font-display text-lg mt-4 mb-2">Neighborhood jobs</h3>
+          <ul className="grid gap-2">
+            {jobs.map(id => {
+              const task = SIDE_TASKS[id];
+              const stage = story.tasks[id];
+              const detail = stage === 'complete' ? `Complete · ${task.reward}` :
+                stage === 'found' ? `Share what you found with ${task.resident}.` : task.objective;
+              return <li key={id} className="rounded-xl bg-muted px-3 py-2"><p className="font-black">{task.title}</p><p className="text-sm">{detail}</p></li>;
+            })}
+          </ul>
+        </>
+      )}
+      {pages.length > 0 && (
+        <>
+          <h3 className="font-display text-lg mt-4 mb-2">Collected clues</h3>
+          <div className="grid gap-2">
+            {pages.map(page => (
+              <button key={page} className="chunk bg-cream px-3 py-2 text-left flex items-center gap-2"
+                onClick={() => openModal({ type: 'story-page', page, fromNotes: true })}>
+                <BookOpen className="w-4 h-4 text-jade shrink-0" aria-hidden="true" />{STORY_PAGES[page].title}
+              </button>
+            ))}
+          </div>
+        </>
+      )}
+      <button className="chunk bg-jade text-cream w-full py-2 mt-4" onClick={() => openModal({ type: 'map' })}>Find a neighbor on the map</button>
+    </Sheet>
+  );
+}
+
+function StoryPagePanel({ page, fromNotes }: { page: StoryPage; fromNotes?: boolean }) {
+  const entry = STORY_PAGES[page];
+  const lead = useG(s => s.story.lead);
+  return (
+    <Sheet title={entry.title} accent="bg-[#5c6b48]" test={`modal-story-${page}`}>
+      <div className="rounded-xl border-[2.5px] border-[#75604c] bg-[#f7eacf] px-4 py-3 text-base leading-relaxed text-[#3b2f25]">
+        {entry.text.map(line => <p className="my-2" key={line}>{line}</p>)}
+        {page === 'filed' && lead && <p className="my-2 border-t border-[#75604c]/40 pt-2">{FILED_NOTES[lead]}</p>}
+      </div>
+      <button className="chunk bg-cream w-full py-2 mt-4" onClick={() => openModal({ type: 'field-notes' })}>
+        {fromNotes ? 'Back to field notes' : 'Open field notes'}
+      </button>
     </Sheet>
   );
 }
@@ -417,6 +507,9 @@ function MapPanel() {
               </li>
             ))}
           </ul>
+          <button className="chunk bg-cream w-full px-3 py-2 mt-4 flex items-center justify-center gap-2" onClick={() => openModal({ type: 'field-notes' })}>
+            <BookOpen className="w-4 h-4 text-jade" aria-hidden="true" />Field notes
+          </button>
         </div>
       </div>
     </Sheet>

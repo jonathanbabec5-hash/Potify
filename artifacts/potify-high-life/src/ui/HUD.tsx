@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { Backpack, CalendarDays, Map as MapIcon, Menu, Moon, Shirt, Sun, Volume2, VolumeX, ZoomIn, ZoomOut, ChevronDown } from 'lucide-react';
+import { Backpack, BookOpen, CalendarDays, Map as MapIcon, Menu, Moon, Shirt, Sun, Volume2, VolumeX, ZoomIn, ZoomOut, ChevronDown } from 'lucide-react';
 import { game, objective, formatTime } from '@/game/store';
 import { joy, openModal, ui, useG, useUI, type Modal } from '@/game/runtime';
 import { interact } from '@/game/interact';
@@ -36,6 +36,7 @@ export function HUD({ touch }: { touch: boolean }) {
   const money = useG(s => s.money);
   const muted = useG(s => s.settings.muted);
   const obj = useG(s => objective(s));
+  const showNotes = useG(s => s.quest.met || s.story.leaseRead);
   const prompt = useUI(s => s.prompt);
   const zone = useUI(s => s.zone);
   const [objOpen, setObjOpen] = useState(true);
@@ -80,6 +81,11 @@ export function HUD({ touch }: { touch: boolean }) {
             ))}
           </div>
         </button>
+        {showNotes && (
+          <button className="chunk bg-cream w-fit px-3 py-2 flex items-center gap-2 text-sm" onClick={() => openModal({ type: 'field-notes' })} data-testid="button-field-notes">
+            <BookOpen className="w-4 h-4 text-jade" aria-hidden="true" />Field notes
+          </button>
+        )}
       </div>
 
       {/* top-right: menus */}
