@@ -4,7 +4,7 @@ import { useKeyboardControls } from '@react-three/drei';
 import * as THREE from 'three';
 import { game } from '@/game/store';
 import { joy, npcPos, player, ui, useG, useUI, type Interactable, type NpcId } from '@/game/runtime';
-import { NPCS, ROOF_BOUNDS, ROOF_COLLIDERS, STATIC_TARGETS, TOWN_BOUNDS, TOWN_COLLIDERS, npcSchedule, zoneAt, type AABB } from '@/game/world';
+import { NPCS, PLAYER_HAIR, ROOF_BOUNDS, ROOF_COLLIDERS, STATIC_TARGETS, TOWN_BOUNDS, TOWN_COLLIDERS, npcSchedule, zoneAt, type AABB } from '@/game/world';
 import { sfx } from '@/game/audio';
 import { Character } from '@/scene/Character';
 
@@ -114,7 +114,7 @@ export function Player() {
 
   return (
     <group ref={group}>
-      <Character shirt={shirt} skin={skin} hair="#13293a" variant="player" speed={speed} />
+      <Character shirt={shirt} skin={skin} hair={PLAYER_HAIR} variant="player" speed={speed} />
     </group>
   );
 }

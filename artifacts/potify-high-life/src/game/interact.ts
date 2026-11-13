@@ -43,6 +43,12 @@ export function interact(t: Interactable | null) {
     case 'rack': openModal({ type: 'inventory' }); break;
     case 'planner': openModal({ type: 'calendar' }); break;
     case 'board': openModal({ type: 'map' }); break;
+    case 'story-item': {
+      if (!t.storyItem) break;
+      game.readStoryItem(t.storyItem);
+      openModal({ type: 'story-page', page: t.storyItem });
+      break;
+    }
   }
 }
 
