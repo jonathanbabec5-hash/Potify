@@ -4,6 +4,11 @@
 
 Grow a crop on the rooftop, get to know the neighborhood and return to a saved game in the same browser. The main branch contains the baseline life sim. The later Roof 7B lease story and developer notes are available on the [public story review branch](https://github.com/jonathanbabec5-hash/Potify/tree/codex/public-developer-guide). The game uses fictional money.
 
+## Original development and marketing archive
+
+- [November 4, 2026 public Master Key — complete extracted text](docs/canon/2026-11-04-public-master-key-extracted.txt): original spoiler-safe design canon; not the original PDF layout and not a claim that every feature is implemented.
+- [November 8, 2026 original campaign copy and artwork](docs/marketing/2026-11-08-original-campaign.md): recovered copy and exact original JPEG; publication remains unverified.
+
 ## Run locally
 
 Use Node 24 and pnpm 11. From the root run the following commands.
