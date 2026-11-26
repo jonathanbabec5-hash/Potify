@@ -225,7 +225,8 @@ Potify/
 │   │   │   │   └── potify_game_x_teaser.png
 │   │   │   └── 2026-11-08/
 │   │   │       ├── Alt_Text.txt
-│   │   │       └── Post.txt
+│   │   │       ├── Post.txt
+│   │   │       └── potify-city-rooftop-greenhouse-source.png
 │   │   ├── 2026-11-08-original-campaign.md
 │   │   ├── ORIGINALS.md
 │   │   └── SHA256SUMS

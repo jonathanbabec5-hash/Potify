@@ -6,6 +6,7 @@ Chance’s November 4 concept puts the player on a rooftop with a first crop and
 | --- | --- | --- |
 | November 4, 2026 | [Landscape X teaser](originals/2026-11-04/potify_game_x_teaser.png) | 1600 × 900 PNG. “From one rooftop to a whole city.” |
 | November 4, 2026 | [Vertical story](originals/2026-11-04/potify_game_vertical_story.png) | 1080 × 1920 PNG. “Start small. Grow big.” Both graphics identify the imagery as concept art or the game as in development. |
+| November 6, 2026 | [Rooftop greenhouse concept art, lossless PNG](originals/2026-11-08/potify-city-rooftop-greenhouse-source.png) | The 1536 × 1024 source image used for the November 8 game card. The original filename was `POTIFY City Rooftop Greenhouse Diorama.png`. Re-encoding the PNG with the archived JPEG’s quantization tables, chroma subsampling and optimized Huffman tables reproduced the posting-kit JPEG byte for byte. |
 | November 8, 2026 | [Original caption](originals/2026-11-08/Post.txt) · [original alt text](originals/2026-11-08/Alt_Text.txt) · [original artwork](assets/2026-11-08-potify-city-concept.jpg) | Exact contents of the game card in the November 6–9 posting kit, under `Campaign/06-city/`. The JPEG is also the image embedded in the campaign HTML. |
 | November 8, 2026 | [Campaign record](2026-11-08-original-campaign.md) | The kit proposed 7:37 p.m. Eastern on X. Publication remains unverified. |
 
