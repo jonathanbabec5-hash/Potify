@@ -6,8 +6,7 @@ Grow a crop on the rooftop, get to know the neighborhood and return to a saved g
 
 ## Original development and marketing archive
 
-- [November 4, 2026 public Master Key — complete extracted text](docs/canon/2026-11-04-public-master-key-extracted.txt): original spoiler-safe design canon; not the original PDF layout and not a claim that every feature is implemented.
-- [November 8, 2026 original campaign copy and artwork](docs/marketing/2026-11-08-original-campaign.md): recovered copy and exact original JPEG; publication remains unverified.
+[Open the original marketing and design archive](docs/marketing/ORIGINALS.md) for the November 4 X and vertical story images, the November 8 campaign copy and artwork, and the original public game bible. The [public Master Key PDF](docs/canon/originals/POTIFY_Master_Key_PUBLIC.pdf) preserves the November 4 layout. A [text extraction](docs/canon/2026-11-04-public-master-key-extracted.txt) is also available.
 
 ## Run locally
 

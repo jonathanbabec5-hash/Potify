@@ -13,3 +13,5 @@ Chance owns the playtest and approves any public posts. Link each clip to its te
 ## Original campaign archive
 
 [November 8, 2026 — POTIFY City and Devnet Lab](marketing/2026-11-08-original-campaign.md) preserves the original proposed copy and artwork. No approval or publication receipt has been recovered; do not automatically replay this campaign.
+
+[Browse the original marketing materials](marketing/ORIGINALS.md), including both November 4 social graphics, the November 8 caption and alt text, and the public design sources behind the campaign.
