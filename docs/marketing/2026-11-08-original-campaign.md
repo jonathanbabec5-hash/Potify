@@ -25,13 +25,13 @@ Recovered November 26, 2026 from the original POTIFY X campaign for November 6�
 - Caption: AI-generated concept art
 - Alt text: POTIFY City concept art with a glowing glass greenhouse, a harvest crate and a delivery cart by a violet river skyline.
 - Source dimensions: 1536 × 1024
-- Original embedded JPEG: not included in this text recovery; pending separate binary export and checksum verification. Do not substitute new art and label it original.
+- Original embedded JPEG: [recovered artwork](assets/2026-11-08-potify-city-concept.jpg). Extracted directly from the original HTML and verified byte-for-byte against the GitHub copy. Git blob: `696902710d95ed8a8c6338de9ce6bdcd300e96fe`.
 
 ## Companion design record
 
 The November 4, 2026 public Master Key v1.0 identifies the original title as $POTIFY: A Wonderful High Life, with POTIFY City as the universe label. It describes an original cozy 3D city-life and farming simulator, grounded in daily routines, neighborhood relationships, seasons, a rooftop plot and the fictional grow–harvest–sell–upgrade economy. These are design goals unless demonstrated by a tested build. SimSOL and virtual harvest units have no redemption, cash-out, real cannabis purchasing function or token entitlement. Concept art is not gameplay.
 
-- [Current game source](../../..)
+- [Current game source](https://github.com/jonathanbabec5-hash/Potify)
 - [Existing marketing and sales plan](../MARKETING.md)
 - [Public canon repository](https://github.com/jonathanbabec5-hash/potify-city-canon)
 - [POTIFY public build directory](https://github.com/jonathanbabec5-hash/potify-public-builds)
@@ -40,4 +40,4 @@ The November 4, 2026 public Master Key v1.0 identifies the original title as $PO
 
 Original source: POTIFY_X_Campaign_Nov06-09.html, article id `city`, copy id `copy-city`.
 Companion source: POTIFY_Master_Key_PUBLIC.pdf, edition v1.0, November 4, 2026.
-This record preserves the exact recovered campaign text and metadata; it is not a complete binary archive of either original document. Keep original files and private material separate until explicitly classified and backed up.
+This record preserves the exact recovered campaign text, metadata, and original JPEG; it is not a complete binary archive of either original document. Keep original files and private material separate until explicitly classified and backed up.
