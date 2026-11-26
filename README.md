@@ -2,6 +2,14 @@
 
 [Full repository tree](docs/DIRECTORY.md) · [Technical whitepaper](docs/WHITEPAPER.md) · [Marketing and sales plan](docs/MARKETING.md) · [Developer log](docs/BUILD-LOG.md)
 
+## Who gets to stay on Roof 7B?
+
+A first crop gives you something to sell. The lease gives you a reason to care what that sale makes possible. Roof 7B belongs as much to the neighbors downstairs as it does to the person watering the roof. A player who remembers Moss and a broken latch has found a different game from one who only remembers the balance.
+
+Follow a harvest in the [game store](artifacts/potify-high-life/src/game/store.ts), then a resident’s task in the [story model](artifacts/potify-high-life/src/game/story.ts). The ledger, latch and signal belong to different residents. Growth, inventory and the local save have to agree with the story even after you close the tab.
+
+Start a fresh local game, harvest once, speak to a resident and reload. Tell us the first moment you understood why the lease mattered—or where that connection was lost. Give the device and the last action. The currency is fictional; this is a playtest.
+
 Grow a first crop on Roof 7B, meet the neighbors in the Canopy Quarter and decide how to keep the rooftop lease. This branch includes the game's first story arc, a browser save system and an in-game developer log. Seed → Soil → Solana is the project's creative lineage. The game economy uses fictional currency.
 
 ## Run the game locally
