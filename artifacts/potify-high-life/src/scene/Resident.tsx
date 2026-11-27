@@ -1,11 +1,49 @@
-import { useEffect, useLayoutEffect, useMemo, useRef, type RefObject } from 'react';
+import { use, useEffect, useLayoutEffect, useMemo, useRef, type RefObject } from 'react';
 import { useFrame, useLoader } from '@react-three/fiber';
-import { Bone, Color, Group, MathUtils, MeshStandardMaterial, SkinnedMesh } from 'three';
-import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
+import { Bone, BufferAttribute, BufferGeometry, Color, DataTexture, Group, LinearFilter, MathUtils, MeshStandardMaterial, SkinnedMesh } from 'three';
+import { GLTFLoader, type GLTF } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { clone } from 'three/examples/jsm/utils/SkeletonUtils.js';
 import residentUrl from '@/assets/resident/resident.glb?url';
 
-function dress(template: Group) {
+type Indices = Map<string, BufferAttribute>;
+const indexSets = new WeakMap<GLTF, Promise<Indices>>();
+const distanceGeometry = new WeakMap<BufferGeometry, BufferGeometry>();
+
+function handheldIndices(asset: GLTF) {
+  let promise = indexSets.get(asset);
+  if (!promise) {
+    const lookup = asset.parser.json.extras.handheldIndices as Record<string, number>;
+    promise = Promise.all(Object.entries(lookup).map(async ([material, id]) =>
+      [material, await asset.parser.getDependency('accessor', id) as BufferAttribute] as const
+    )).then(entries => new Map(entries));
+    indexSets.set(asset, promise);
+  }
+  return promise;
+}
+
+function simplified(source: BufferGeometry, indices: BufferAttribute) {
+  let geometry = distanceGeometry.get(source);
+  if (!geometry) {
+    geometry = new BufferGeometry();
+    for (const [name, attribute] of Object.entries(source.attributes)) geometry.setAttribute(name, attribute);
+    geometry.setIndex(indices);
+    distanceGeometry.set(source, geometry);
+  }
+  return geometry;
+}
+
+const contact = new Uint8Array(32 * 32 * 4);
+for (let y = 0; y < 32; y++) for (let x = 0; x < 32; x++) {
+  const offset = 4 * (32 * y + x);
+  const distance = Math.hypot((x - 15.5) / 15.5, (y - 15.5) / 15.5);
+  contact.fill(255, offset, offset + 3);
+  contact[offset + 3] = 255 * Math.max(0, 1 - distance) ** 1.3;
+}
+const contactMap = new DataTexture(contact, 32, 32);
+contactMap.magFilter = contactMap.minFilter = LinearFilter;
+contactMap.needsUpdate = true;
+
+function dress(template: Group, indices: Indices | null) {
   const model = clone(template);
   const bones: Record<string, Bone> = {};
   const dyes = new Map<string, MeshStandardMaterial>();
@@ -17,8 +55,10 @@ function dress(template: Group) {
     palette ??= node.skeleton;
     node.skeleton = palette;
     node.frustumCulled = false;
-    node.castShadow = true;
+    node.castShadow = !indices;
     const original = node.material as MeshStandardMaterial;
+    const reduced = indices?.get(original.name);
+    if (reduced) node.geometry = simplified(node.geometry, reduced);
     if (original.name === 'Skin' || original.name === 'Shirt') {
       const material = original.clone();
       dyes.set(original.name, material);
@@ -31,11 +71,12 @@ function dress(template: Group) {
 const baseSkin = new Color('#edc2a7');
 const white = new Color(1, 1, 1);
 
-export function Resident({ shirt, skin, speed, active = true }: {
-  shirt: string; skin: string; speed: RefObject<number>; active?: boolean;
+export function Resident({ shirt, skin, speed, handheld = false }: {
+  shirt: string; skin: string; speed: RefObject<number>; handheld?: boolean;
 }) {
   const asset = useLoader(GLTFLoader, residentUrl);
-  const { model, bones, dyes } = useMemo(() => dress(asset.scene), [asset.scene]);
+  const indices = handheld ? use(handheldIndices(asset)) : null;
+  const { model, bones, dyes } = useMemo(() => dress(asset.scene, indices), [asset.scene, indices]);
   const elapsed = useRef(0);
   const stride = useRef(0);
   useLayoutEffect(() => {
@@ -55,7 +96,6 @@ export function Resident({ shirt, skin, speed, active = true }: {
   }, [model, dyes]);
 
   useFrame((_, delta) => {
-    if (!active) return;
     const dt = Math.min(delta, .066);
     elapsed.current += dt;
     const t = elapsed.current, pace = speed.current;
@@ -82,5 +122,11 @@ export function Resident({ shirt, skin, speed, active = true }: {
       bones['eye_' + side].rotation.y = .033 * Math.sin(t * .78 + .3);
     }
   });
-  return <primitive object={model} dispose={null} />;
+  return <>
+    {handheld && <mesh position-y={.013} rotation-x={-Math.PI/2}>
+      <planeGeometry args={[.72,.46]} />
+      <meshBasicMaterial map={contactMap} color="#342c23" transparent opacity={.36} depthWrite={false} />
+    </mesh>}
+    <primitive object={model} dispose={null} />
+  </>;
 }

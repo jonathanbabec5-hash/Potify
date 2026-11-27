@@ -35,6 +35,7 @@ export function Player() {
   const speed = useRef(0);
   const [, getKeys] = useKeyboardControls<Ctl>();
   const firstPerson = useG(s => s.settings.camera === 1);
+  const handheld = window.matchMedia('(pointer: coarse)').matches;
   const shirt = useG(s => s.shirt);
   const skin = useG(s => s.skin);
   const leased = useG(s => s.warehouse.leased);
@@ -147,7 +148,7 @@ export function Player() {
 
   return (
     <group ref={group} visible={!firstPerson}>
-      {!firstPerson && <Suspense fallback={null}><Resident shirt={shirt} skin={skin} speed={speed} /></Suspense>}
+      {!firstPerson && <Suspense fallback={null}><Resident shirt={shirt} skin={skin} speed={speed} handheld={handheld} /></Suspense>}
     </group>
   );
 }
