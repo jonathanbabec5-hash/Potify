@@ -1,4 +1,4 @@
-import { ORIGINAL_LOOK, readHeadLook, type HeadLook } from './appearance.ts';
+import { CAMPAIGN_SHIRT, CAMPAIGN_SKIN, ORIGINAL_LOOK, readHeadLook, type HeadLook } from './appearance.ts';
 import { freshLife, validLife, validFloor, childStage, houseDate, NEIGHBORS, PASTIMES, PEOPLE, meetingFloor, type Neighbor, type Pastime, type HouseLife } from './house.ts';
 import { useSyncExternalStore } from 'react';
 import { chooseStory, freshStory, readStory, validateStory, type ChoiceId, type Resident, type StoryItem, type StoryProgress } from './story.ts';
@@ -108,7 +108,7 @@ export const SAVE_KEY = 'potify-wonderful-high-life-v1';
 function freshState(): GameState {
   return {
     version: 1, started: false, acknowledged: false,
-    ...ORIGINAL_LOOK, name: 'Rookie', shirt: '#c7774f', skin: '#d9a67d',
+    ...ORIGINAL_LOOK, name: 'Rookie', shirt: CAMPAIGN_SHIRT, skin: CAMPAIGN_SKIN,
     day: 1, minute: 480, elapsed: 0, money: ECONOMY.startingMoney,
     seeds: { sunhaze: 2, moonmint: 0, amber: 0 }, supplies: 1,
     harvest: [],

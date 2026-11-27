@@ -1,4 +1,4 @@
-import { readHeadLook, ORIGINAL_LOOK } from '@/game/appearance';
+import { CAMPAIGN_SHIRT, CAMPAIGN_SKIN, readHeadLook, ORIGINAL_LOOK } from '@/game/appearance';
 import { HairOptions } from '@/ui/HairOptions';
 import { ResidentView } from '@/scene/ResidentView';
 import { devlogUrl } from '@/game/routes';
@@ -18,8 +18,8 @@ export function Title() {
   const [step, setStep] = useState<'menu' | 'create' | 'confirmReset'>('menu');
   const [name, setName] = useState(saved.name || 'Rooftop Rookie');
   const [look, setLook] = useState(() => readHeadLook(saved));
-  const [shirt, setShirt] = useState(saved.shirt || '#c7774f');
-  const [skin, setSkin] = useState(saved.skin || SKINS[1]);
+  const [shirt, setShirt] = useState(saved.shirt || CAMPAIGN_SHIRT);
+  const [skin, setSkin] = useState(saved.skin || CAMPAIGN_SKIN);
   const [ack, setAck] = useState(false);
 
   const [resetError, setResetError] = useState('');
@@ -96,7 +96,7 @@ export function Title() {
                 <button className="chunk bg-coral text-cream py-3" data-testid="button-confirm-reset" onClick={() => {
                   const result = resetResident();
                   if (!result.ok) { setResetError(result.message); return; }
-                  setLook(ORIGINAL_LOOK); setName('Rooftop Rookie'); setShirt('#c7774f'); setSkin(SKINS[1]); setAck(false); setStep('create');
+                  setLook(ORIGINAL_LOOK); setName('Rooftop Rookie'); setShirt(CAMPAIGN_SHIRT); setSkin(CAMPAIGN_SKIN); setAck(false); setStep('create');
                 }}>Erase and begin</button>
               </div>
             </div>

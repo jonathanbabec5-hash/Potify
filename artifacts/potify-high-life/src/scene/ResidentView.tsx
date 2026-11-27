@@ -15,9 +15,9 @@ function Fitting({ shirt, skin, look, shot, walk, yaw }: {
     const close = shot === 'Face';
     const lens = camera as PerspectiveCamera;
     lens.fov = 28;
-    const height = close ? .50 : 1.99;
-    const distance = Math.max(height, (close ? .40 : .76) * size.height / size.width) / (2 * Math.tan(Math.PI * lens.fov / 360));
-    const target = close ? 1.572 : .89;
+    const height = close ? .76 : 2.05;
+    const distance = Math.max(height, (close ? .61 : .84) * size.height / size.width) / (2 * Math.tan(Math.PI * lens.fov / 360));
+    const target = close ? 1.458 : .89;
     lens.position.set(0, target + (close ? .022 : .07), distance + .085);
     lens.lookAt(0, target, .085);
     lens.updateProjectionMatrix();
@@ -27,23 +27,23 @@ function Fitting({ shirt, skin, look, shot, walk, yaw }: {
   }, [camera, size, shot, walk, yaw, invalidate]);
   useFrame(() => { if (turn.current) turn.current.rotation.y = yaw; });
   return <>
-    <hemisphereLight args={['#e6edee', '#8c8276', 1.08]} />
-    <directionalLight color="#fff0df" intensity={2.45} position={[-2.6, 3.4, 2.4]} />
-    <directionalLight color="#c5e5ea" intensity={1.5} position={[1.6, 1.9, -2]} />
+    <hemisphereLight args={['#fff2de', '#aba09d', 1.30]} />
+    <directionalLight color="#fff0df" intensity={2.18} position={[-2.6, 3.2, 3.4]} />
+    <directionalLight color="#e0cafa" intensity={1.5} position={[1.6, 1.9, -2]} />
     <directionalLight color="#ffe7d4" intensity={.45} position={[3, .9, 2]} />
     <group ref={turn}><Resident look={look} shirt={shirt} skin={skin} speed={speed} /></group>
   </>;
 }
 
-export function ResidentView({ shirt, skin, look, compact, studio = false }: {
-  shirt: string; skin: string; look: HeadLook; compact?: number; studio?: boolean;
+export function ResidentView({ shirt, skin, look, compact, studio = false, compare = false }: {
+  shirt: string; skin: string; look: HeadLook; compact?: number; studio?: boolean; compare?: boolean;
 }) {
   const [shot, setShot] = useState<Shot>('Face');
   const [walk, setWalk] = useState(false);
-  const [yaw, setYaw] = useState(() => look.hairStyle === 'tail' ? .92 : -.28);
+  const [yaw, setYaw] = useState(() => look.hairStyle === 'tail' ? .92 : .54);
   const lastX = useRef<number | null>(null);
   const style: CSSProperties = compact ? { width: compact, height: compact, flexShrink: 0 } :
-    { height: studio ? 'clamp(230px,55dvh,610px)' : 'clamp(160px,26dvh,260px)' };
+    { height: compare ? 'clamp(180px, min(54vw, 48dvh), 470px)' : studio ? 'clamp(230px,55dvh,610px)' : 'clamp(160px,26dvh,260px)' };
   return <div>
     <div style={{ ...style, overflow:'hidden', position:'relative', borderRadius: compact ? 12 : 18,
       background:'radial-gradient(ellipse at 48% 33%, #c5c2ac 0%, #a3a998 43%, #6a7b70 77%, #485f56 100%)', touchAction:compact ? 'auto' : 'none' }}

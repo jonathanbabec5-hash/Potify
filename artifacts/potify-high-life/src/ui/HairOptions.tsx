@@ -17,7 +17,7 @@ export function HairOptions({ look, onChange }: { look: HeadLook; onChange: (loo
     <label className="flex cursor-pointer items-center gap-2 font-bold" style={{minHeight:44}}>
       <input type="checkbox" role="switch" className="h-5 w-5 accent-[#354f40]" checked={look.wearsCap}
         onChange={event => onChange({ ...look, wearsCap: event.target.checked })} />
-      POTIFY knit cap
+      POTIFY leaf cap
     </label>
   </fieldset>;
 }

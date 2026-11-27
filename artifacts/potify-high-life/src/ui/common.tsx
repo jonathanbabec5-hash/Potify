@@ -1,4 +1,4 @@
-import { ORIGINAL_LOOK, type HeadLook } from '@/game/appearance';
+import { CAMPAIGN_SHIRT, CAMPAIGN_SKIN, ORIGINAL_LOOK, type HeadLook } from '@/game/appearance';
 import type { ReactNode } from 'react';
 import { X } from 'lucide-react';
 import { closeModal, useHudVisible, useUI } from '@/game/runtime';
@@ -8,8 +8,8 @@ import { NPCS } from '@/game/world';
 
 import { ResidentView } from '@/scene/ResidentView';
 
-export const SHIRTS = ['#c7774f', '#f2703f', '#1f9e89', '#fbd255', '#ef6f7c', '#4c8fb0', '#8fbf4a', '#fff1d6', '#2b3a4f'];
-export const SKINS = ['#f6d2b4', '#e8b48e', '#c98b5e', '#9c6440', '#6e4429', '#4a2e1e'];
+export const SHIRTS = [CAMPAIGN_SHIRT, '#c7774f', '#f2703f', '#1f9e89', '#fbd255', '#ef6f7c', '#4c8fb0', '#8fbf4a', '#fff1d6', '#2b3a4f'];
+export const SKINS = ['#f6d2b4', '#e8b48e', CAMPAIGN_SKIN, '#c98b5e', '#9c6440', '#6e4429', '#4a2e1e'];
 
 export function Swatches({ colors, value, onChange, test }: { colors: string[]; value: string; onChange: (c: string) => void; test: string }) {
   return (

@@ -1,3 +1,6 @@
+export const CAMPAIGN_SHIRT = '#ebe2e6';
+export const CAMPAIGN_SKIN = '#d9a67d';
+
 export const HAIR_STYLES = {
   sweep: 'Swept crop',
   coils: 'Coils',

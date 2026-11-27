@@ -1,14 +1,7 @@
-# Canopy House resident
+# November campaign grower
 
-The adult player, new-resident portrait, wardrobe and character viewer load the same editable glTF 2.0 model. The model contains its joint hierarchy, inverse bind matrices, UVs, materials and textures. The garment dye is named `Shirt` and the complexion material is named `Skin`. Phone gameplay uses precomputed lower-detail indices in the same model, with the same textures, bones and saved colors. The game animates the joints in `scene/Resident.tsx`.
+The playable grower is an original skinned glTF model of the left-hand resident from the [November 4 POTIFY teaser](../../../../../docs/marketing/originals/2026-11-04/potify_game_x_teaser.png). The teaser establishes the face, navy six-panel leaf cap, chestnut fringe, pale rolled sleeves, green bib, fingerless gloves and canvas pack. The lower-body design and reverse of the pack are interpretations for play. The WebP beside the model is a crop of the archived teaser.
 
-The human topology, face and hand weights, skin, eyes, brows, hair, lashes, workwear and shoes derive from the MakeHuman core collection. Core assets are CC0. POTIFY's adaptation includes the fitted knit cap and its woven seedling label, dyed workwear, a relaxed hand and mouth pose, stubble, a reduced joint palette and geometry optimized for gameplay.
+The studio, new-resident screen, wardrobe and third-person player share the same mesh, rig, skin and shirt dyes. The GLB includes the three fitted hairstyles, independent cap and a ponytail joint. Baked vertex colours hold the facial paint and contact shadows. The close-up renderer uses the full mesh. Handheld play uses reduced indices stored in the same GLB and vertex lighting.
 
-- [MakeHuman core asset license](https://static.makehumancommunity.org/about/license.html)
-- [Official system assets](https://static.makehumancommunity.org/assets/assetpacks/makehuman_system_assets.html)
-- [MakeHuman base mesh and shape targets](https://github.com/makehumancommunity/makehuman/tree/a8bc2d54ff0ac92e78ff71431b1023eda42bf482/makehuman/data)
-- [Core asset data conversion used for fitting](https://github.com/makehuman-js/makehuman-data/tree/e5d1a42cb469025a6d2b3ecea3e0252e6feccc1f/public/data)
-
-Open `?resident=1` to inspect the face, rotate the outfit or see the gait. Use Wardrobe in gameplay to save a shirt and complexion. Run `npm run build:offline` followed by `node --experimental-strip-types scripts/profile-mobile.mjs --resident --check` to exercise the visible model across the five profiling routes.
-
-The swept crop, coily crop and ponytail use the MakeHuman CC0 system hair (short02, afro01 and ponytail01). Each attachment fits this head in joint-local coordinates with baked handheld triangle indices. The cap uses fitted hair at its rim and the ponytail exits at the back. Test an uncovered style in third person with the additional profiling flag `--hair=tail`.
+Open `?resident=1&campaign=1` to compare the playable model with the teaser. The controls rotate the model and preview its walk cycle. Open the GLB in Blender to inspect the editable rig, skin weights, meshes, materials and colour attributes.
