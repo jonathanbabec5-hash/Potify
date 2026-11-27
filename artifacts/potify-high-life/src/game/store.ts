@@ -21,8 +21,20 @@ export interface Harvest {
 }
 export type RoofProject = 'glasshouse' | 'cart';
 export const PROJECTS = {
-  glasshouse: { name: 'Glasshouse extension', detail: 'Moss can glaze the strip beside the old greenhouse. Two new beds will fit under the glass.' },
-  cart: { name: 'Neighborhood delivery cart', detail: 'Pack a harvest by the roof stairs and bring it to a neighbor for the market price plus 5 simSOL.' },
+  glasshouse: {
+    name: 'Glasshouse extension',
+    detail: 'Moss can glaze the strip beside the old greenhouse. Two new beds will fit under the glass.',
+    signedBy: 'Moss', neighbor: 'moss',
+    pencilNote: 'Save me the strip off the last pane. Kitchen window on four is the same width.',
+    followUp: 'That little green pane over the supper counter? Left over from your first job. Tessa can leave the soup there without a draft lifting the skin.',
+  },
+  cart: {
+    name: 'Neighborhood delivery cart',
+    detail: 'Pack a harvest by the roof stairs and bring it to a neighbor for the market price plus 5 simSOL.',
+    signedBy: 'Jun', neighbor: 'jun',
+    pencilNote: 'Wheel squeaks on four. Gives me time to clear a shelf. Put 7B on it so nobody stacks records there.',
+    followUp: 'See the shelf under the café window? Used to be three boxes of scratched singles. Now the first thing off your cart has a place to land.',
+  },
 } as const;
 export const WAREHOUSE = { price: 90, minimumUnits: 250, dispatchFee: 12 };
 export const DELIVERY_STOPS = [

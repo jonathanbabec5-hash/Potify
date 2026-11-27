@@ -210,6 +210,7 @@ function RoofWorks() {
   const projects = useG(s => s.projects);
   const balance = useG(s => s.money);
   const cost = projectPrice(projects.length);
+  const firstJob = PROJECTS[projects[0]];
   return <section className="mt-5 border-t border-ink/30 pt-4">
     <h3 className="font-display text-xl">Roof 7B works ledger</h3>
     <p className="text-sm my-2">{projects.length === 0
@@ -222,6 +223,15 @@ function RoofWorks() {
         {projects.includes(id) ? 'Built on your roof' : !sold ? 'Bring a market receipt' : `Build · ${cost} simSOL`}
       </button>
     </div>)}</div>
+    {firstJob && <details className="mt-4 rounded-lg border border-[#a58e67] bg-[#f6ecd6] text-[#38382e]" data-testid="work-slip">
+      <summary className="cursor-pointer px-4 py-3 font-bold">Turn over Mira’s work slip</summary>
+      <div className="mx-4 mb-4 border-t border-dashed border-[#a58e67] pt-3">
+        <p className="text-xs font-bold tracking-wide">GREEN EXCHANGE · CARBON COPY</p>
+        <p className="mt-1 text-sm">First order for 7B · {firstJob.name}</p>
+        <blockquote className="my-3 font-serif text-lg italic">{firstJob.pencilNote}</blockquote>
+        <p className="text-right text-sm">— {firstJob.signedBy}</p>
+      </div>
+    </details>}
   </section>;
 }
 
@@ -366,6 +376,7 @@ function Talk({ npc, line }: { npc: NpcId; line: string }) {
   const obj = useG(s => objective(s));
   const { story, sold } = useG(s => ({ story: s.story, sold: s.quest.sold }));
   const [reply, setReply] = useState<string>();
+  const firstJob = useG(s => PROJECTS[s.projects[0]]);
   const choices = storyChoices(story, npc, sold);
   const dialogue = reply ?? storyLine(story, npc, sold) ?? line;
   const hearts = Math.min(5, Math.floor(f / 1));
@@ -398,6 +409,10 @@ function Talk({ npc, line }: { npc: NpcId; line: string }) {
             </button>
           ))}
         </div>
+      )}
+      {firstJob?.neighbor === npc && (
+        <button className="chunk bg-cream w-full py-2 mt-3" data-testid="ask-first-job"
+          onClick={() => setReply(firstJob.followUp)}>Ask about the first work slip</button>
       )}
       {npc === 'mira' && story.filed && (
         <button className="chunk bg-jade text-cream w-full py-2 mt-4" onClick={() => openModal({ type: 'story-page', page: 'filed' })}>

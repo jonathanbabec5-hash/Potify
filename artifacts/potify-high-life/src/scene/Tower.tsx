@@ -159,6 +159,7 @@ function Doors({ floor }: { floor: number }) {
   );
 }
 function Room({ floor, archive }: { floor: number; archive: boolean }) {
+  const firstProject = useG(s => s.projects[0]);
   const albums = useG((s) => Object.keys(s.life.festivals).length);
   const family = useG((s) => s.life);
   const day = useG((s) => s.day);
@@ -204,6 +205,13 @@ function Room({ floor, archive }: { floor: number; archive: boolean }) {
             <cylinderGeometry args={[0.35, 0.26, 0.35, 12]} />
           </mesh>
         ))}
+        {firstProject === 'glasshouse' && (
+          <group name="MossKitchenTransom" position={[-6.95, 2.06, -5.35]}>
+            <Box at={[0, 0, 0]} size={[1.43, .94, .10]} color="#715238" />
+            <Box at={[0, 0, .065]} size={[1.27, .78, .055]} color="#82aa8a" />
+            <Box at={[.33, 0, .10]} size={[.045, .80, .045]} color="#bfa37b" />
+          </group>
+        )}
         <Sign text="SUPPER CLUB" x={-4.3} y={2.28} z={-5.47} />
       </>
     );

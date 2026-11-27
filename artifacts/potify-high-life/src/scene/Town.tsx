@@ -68,6 +68,7 @@ function Shop({ id }: { id: ShopKey }) {
       )}
       {id === 'cafe' && (
         <>
+          <CafeDeliveryShelf x={w / 2 - 1.25} z={d / 2 + .19} />
           {[-2.6, 2.6].map(x => (
             <group key={x} position={[x, 0, d / 2 + 0.8]}>
               <mesh position={[0, 0.7, 0]} material={mat('#13293a')}><boxGeometry args={[0.8, 1.4, 0.6]} /></mesh>
@@ -82,6 +83,23 @@ function Shop({ id }: { id: ShopKey }) {
       )}
     </group>
   );
+}
+
+function CafeDeliveryShelf({ x, z }: { x: number; z: number }) {
+  const cartFirst = useG(s => s.projects[0] === 'cart');
+  if (!cartFirst) return null;
+  return <group name="JunDeliveryShelf" position={[x, .96, z]}>
+    <SolidSurfaces>
+      <SurfaceBlock at={[0, 0, 0]} size={[1.66, .12, .47]} finish="cedar" />
+      {[-.55, .55].map(side => <mesh key={side} position={[side, -.18, -.05]} rotation-x={-.5} material={mat('#555747')}>
+        <boxGeometry args={[.07, .40, .08]} />
+      </mesh>)}
+    </SolidSurfaces>
+    <mesh position={[.35, .18, -.08]}>
+      <planeGeometry args={[.53, .25]} />
+      <meshBasicMaterial map={signTex('7B', '#e4cea4', '#394638', 128, 64)} />
+    </mesh>
+  </group>;
 }
 
 function SignalMast({ h }: { h: number }) {

@@ -28,7 +28,7 @@ export const SIDE_TASKS = {
     title: 'Five Minutes of Static',
     resident: 'Jun',
     offer: 'I lent a record to the last caretaker of 7B. Never saw it again. If the radio log’s still by the set, see what they played before the signal cut out.',
-    objective: 'Read the broadcast log beside the radio in Home 7B.',
+    objective: 'Read the broadcast log beside the radio in Apartment 7B.',
     reply: 'Two knocks. That was my teacher’s way of checking the other end could still hear. She told me there was a second station. I thought she meant across town.',
     reward: '3 virtual simSOL',
   },
@@ -195,7 +195,7 @@ export function chooseStory(story: StoryProgress, resident: Resident, id: Choice
 }
 
 export function storyObjective(story: StoryProgress, sold: boolean): string {
-  if (!story.leaseRead) return 'Read the lease inside Home 7B on the rooftop.';
+  if (!story.leaseRead) return 'Read the lease on the desk in Apartment 7B.';
   if (!story.lead) return 'Show the lease to Mira and choose who to ask first.';
   if (story.filed) return 'Read A Missing Season in your field notes.';
   const id = leadTasks[story.lead];

@@ -1,10 +1,12 @@
-# POTIFY City · A Wonderful High Life
+# $POTIFY: A Wonderful High Life
 
 [Complete repository directory tree](docs/DIRECTORY.md) · [Whitepaper](docs/WHITEPAPER.md) · [Marketing and sales plan](docs/MARKETING.md) · [Build log](docs/BUILD-LOG.md)
 
-This redesign brings the Roof 7B story together with the [first-harvest campaign](docs/marketing/2026-11-08-original-campaign.md). Start in the apartment, read the lease, meet the neighbors and carry your first crop downstairs to Green Exchange. Everything runs on fictional simSOL and browser saves.
+You move into Apartment 7B in Canopy House. Your lease comes with six rooftop beds and a key. Grow a first crop, take it downstairs to Mira at Green Exchange, and decide what that harvest will build for the neighborhood. This is the choice described in the [original November 8 campaign](docs/marketing/2026-11-08-original-campaign.md). The game uses fictional simSOL and saves in your browser.
 
-Apartment 7B opens at eye level. Drag across the scene to turn and tilt the view, then move with the joystick or WASD. The shoulder and overhead views remain in Pause → Settings. The apartment windows, lease desk, greenhouse rack and planters are walkable 3D scenes with textured surfaces.
+[Download the playable edition from GitHub](https://github.com/jonathanbabec5-hash/Potify/archive/refs/heads/gh-pages.zip). On a computer, unzip it and open `index.html` in a WebGL-capable browser.
+
+The opening holds on the sunrise until you turn toward Tessa for the keys. After the conversation, a high camera follows your grower. Drag to look around and move with the joystick or WASD. You can change the camera in Pause → Settings. The [editable opening scene](art-source/first-light/) sits alongside its in-game export.
 
 On a phone, the clock, objectives and notifications start hidden. Open the pause menu in the upper right and tap **Show overlays** or **Hide overlays**. The game remembers the setting on this browser.
 
@@ -15,7 +17,7 @@ The market-square board carries signed crop orders and festival invitations. Ups
 | Place | What you can do |
 | --- | --- |
 | Home 7B | Read the lease and follow Moss or Jun through the existing caretaker story. |
-| Green Exchange | Sell a first harvest and commission either roof project for 4 simSOL. The second costs 80. |
+| Green Exchange | Sell a first harvest and commission either roof project for 4 simSOL. The second costs 80. Turn over Mira’s work slip to find out which neighbor used part of that first job. Visit the signer to hear their side. The city remembers which project came first. |
 | Glasshouse extension | Plant and tend two additional beds under an open-sided glass canopy. |
 | Rooftop delivery cart | Pack a harvested batch beside the stairs. Carry it downstairs to the café or lab. Each signed delivery pays the market value plus 5 simSOL. |
 | Old Industrial Ward | Walk east of the exchange. With a roof project, 250 traded units and 90 simSOL, lease the canal warehouse. The shutter opens onto a freight bench that takes two batches each day for their combined value plus 12 simSOL. |
@@ -93,6 +95,6 @@ Before the eye-level update on November 27, 2026, a 60-second run per route in h
 
 An 8.8-second comparison route through the rooftop went from 9.1 to 40.2 FPS and from 447 to 87 median draw calls after the changes. Its 95th-percentile frame time went from 216.7 to 50.0 ms. Physical iPhone Safari measurements remain open.
 
-Run `node scripts/check-resident-reset.mjs` from the game package after building the offline edition to exercise both reset buttons with disposable saves. It covers declined storage removal, retry, the first lease interaction, and resuming the new resident.
+From the game package, run `node scripts/check-opening.mjs`, `node scripts/check-resident-reset.mjs` and `node scripts/check-first-work-slip.mjs` after building the offline edition. These browser checks cover the sunrise and handoff, both reset buttons, the first sale, both upgrade orders and the signer’s dialogue after a reload. They use disposable browser saves.
 
 The eye-level release at commit `659984a` completed the same one-minute walks on the same software renderer. Apartment 7B averaged 53.2 FPS, the rooftop 48.0, the evening greenhouse 48.8, floor 24 51.8 and the market 51.5. The 95th-percentile frame time was 33.4 ms on each route. Median internal canvas widths ranged from 249 to 333 pixels with the HUD drawn at native display resolution.

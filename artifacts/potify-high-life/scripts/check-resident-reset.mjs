@@ -56,6 +56,7 @@ try {
     assert.equal(await saved(), null);
     await button('input-name').fill('New resident');
     await button('checkbox-ack').tap(); await button('button-begin').tap();
+    await button('opening-skip').tap();
     await button('button-action').filter({ hasText: 'Lease for Roof 7B' }).waitFor();
     await button('button-action').tap();
     assert.equal((await saved()).story.leaseRead, true);
