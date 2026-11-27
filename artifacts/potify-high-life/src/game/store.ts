@@ -1,5 +1,6 @@
 import { HIGH_CAMERA } from './opening.ts';
 import { CAMPAIGN_SHIRT, CAMPAIGN_SKIN, ORIGINAL_LOOK, readHeadLook, type HeadLook } from './appearance.ts';
+import { isPacketClue, validPacketFold, type PacketClue, type PacketFoldMemory } from './packetFold.ts';
 import { validFourthMug, type MugChoice } from './fourthMug.ts';
 import { freshLife, validLife, validFloor, childStage, houseDate, NEIGHBORS, PASTIMES, PEOPLE, meetingFloor, type Neighbor, type Pastime, type HouseLife } from './house.ts';
 import { useSyncExternalStore } from 'react';
@@ -89,6 +90,7 @@ export interface GameState extends HeadLook {
   deliveries: number;
   warehouse: { leased: boolean; lastDispatchDay: number };
   story: StoryProgress;
+  packetFold?: PacketFoldMemory;
   life: HouseLife;
   position: { x: number; z: number; zone: Zone; floor?: number };
   settings: Settings;
@@ -180,6 +182,7 @@ export function validateSave(value: unknown): value is SavedGame {
   if (!Array.isArray(s.harvest) || !s.harvest.every(validBatch)) return false;
   if (!Array.isArray(s.upgrades) || !s.upgrades.every(id => typeof id === 'string' && UPGRADES.some(u => u.id === id))) return false;
   if (s.life !== undefined && !validLife(s.life, s.day)) return false;
+  if (!validPacketFold(s.packetFold, s.day)) return false;
   if (!object(s.position) || !finite(s.position.x, -1000, 1000) || !finite(s.position.z, -1000, 1000) ||
       !(s.position.zone === 'tower' ? validFloor(s.position.floor) : ['rooftop', 'town', 'greenhouse', 'apartment'].includes(s.position.zone as string))) return false;
   if (!object(s.settings) || typeof s.settings.muted !== 'boolean' || typeof s.settings.music !== 'boolean' ||
@@ -311,6 +314,18 @@ export const game = {
     commit({ ...state, ...readHeadLook(avatar, state), name, shirt: validColor(avatar.shirt) ? avatar.shirt : state.shirt,
       skin: validColor(avatar.skin) ? avatar.skin : state.skin, started: true, acknowledged: true });
     return `Welcome home, ${name}. Your rooftop story starts here.`;
+  },
+  observePacket(clue: PacketClue): boolean {
+    if (state.position.zone !== 'town' || state.packetFold || !isPacketClue(clue)) return false;
+    commit({ ...state, packetFold: { day: state.day, noticed: clue } });
+    return true;
+  },
+  answerPacket(clue: PacketClue): boolean {
+    const memory = state.packetFold;
+    if (state.position.zone !== 'town' || !memory || memory.response ||
+        state.day <= memory.day || !isPacketClue(clue)) return false;
+    commit({ ...state, packetFold: { ...memory, response: { day: state.day, clue } } });
+    return true;
   },
   buySeed(id: string, quantity = 1): string {
     const seed = SEEDS.find(s => s.id === id);

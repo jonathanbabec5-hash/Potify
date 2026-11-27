@@ -489,3 +489,47 @@ test('the fourth-floor mug remembers either harvest supper and one choice across
     }
   }
 });
+
+test('Mira records an observation and accepts either answer only on a later day', async () => {
+  const town = { zone: 'town', x: 68, z: -7.3 };
+  for (const noticed of ['fold', 'pencil']) {
+    for (const clue of ['fold', 'pencil']) {
+      localStorage.removeItem(SAVE_KEY);
+      const { game: resident } = await import('../store.ts?fold-' + noticed + '-' + clue);
+      resident.start();
+      const original = resident.getState();
+      assert.equal(validateSave(original), true, 'an earlier save with no packet memory still loads');
+      assert.equal(resident.observePacket(noticed), false, 'inspection belongs at the shop');
+      resident.setPosition(town);
+      assert.equal(resident.answerPacket(clue), false);
+      assert.equal(resident.observePacket('unknown'), false);
+      assert.equal(resident.observePacket(noticed), true);
+      assert.equal(resident.observePacket(noticed), false);
+      assert.equal(resident.answerPacket(clue), false);
+      const { game: nextVisit } = await import('../store.ts?fold-note-' + noticed + '-' + clue);
+      assert.deepEqual(nextVisit.getState().packetFold, { day: 1, noticed });
+      assert.equal(nextVisit.answerPacket(clue), false, 'reloading does not advance the day');
+      nextVisit.sleep();
+      nextVisit.sleep();
+      nextVisit.setPosition(town);
+      assert.equal(nextVisit.answerPacket('unknown'), false);
+      assert.equal(nextVisit.answerPacket(clue), true);
+      assert.equal(nextVisit.answerPacket(clue === 'fold' ? 'pencil' : 'fold'), false);
+      const { game: reread } = await import('../store.ts?fold-answer-' + noticed + '-' + clue);
+      const after = reread.getState();
+      assert.deepEqual(after.packetFold, { day: 1, noticed, response: { day: 3, clue } });
+      for (const key of ['money', 'seeds', 'quest', 'friendship', 'projects', 'life']) {
+        assert.deepEqual(after[key], original[key]);
+      }
+      for (const invalid of [
+        null, { day: 0, noticed }, { day: 1.5, noticed }, { day: 4, noticed }, { day: 1, noticed: 'mint' },
+        { day: 1, noticed, response: null }, { day: 1, noticed, response: { day: 1, clue } },
+        { day: 1, noticed, response: { day: 4, clue } }, { day: 1, noticed, response: { day: 2, clue: 'mint' } },
+      ]) {
+        assert.equal(validateSave({ ...after, packetFold: invalid }), false);
+      }
+      reread.reset();
+      assert.equal(reread.getState().packetFold, undefined);
+    }
+  }
+});

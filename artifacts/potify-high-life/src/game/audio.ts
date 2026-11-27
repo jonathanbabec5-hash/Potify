@@ -1,8 +1,10 @@
 import recordingUrl from '../assets/the-soil-remembers-grow-room.mp3';
+import paperUrl from '../assets/lore/seed-and-signal/packet-unfold.wav';
 
 export const RECORD_TITLE = 'The Soil Remembers (Grow Room Version)';
 // The released First Cycle master, shared by the rooftop radio, café and listening rooms.
 let radio: HTMLAudioElement | null = null;
+let paper: HTMLAudioElement | null = null;
 let playingGame = false;
 let playPending = false;
 let musicBus: GainNode | null = null;
@@ -88,8 +90,22 @@ export function configureAudio(opts: { muted: boolean; music: boolean }, inGame:
   muted = opts.muted;
   musicOn = opts.music;
   playingGame = inGame;
+  if (muted || !inGame) paper?.pause();
   if (ctx && master) master.gain.setTargetAtTime(muted ? 0 : 0.7, ctx.currentTime, 0.1);
   syncRadio();
+}
+
+function unfoldPacket() {
+  if (!playingGame || muted || document.hidden) return;
+  if (!paper) {
+    paper = new Audio(paperUrl);
+    if (ctx && master) {
+      try { ctx.createMediaElementSource(paper).connect(master); }
+      catch { /* Some mobile webviews only allow native media playback. */ }
+    }
+  }
+  paper.currentTime = 0;
+  void paper.play().catch(() => {});
 }
 
 export function beginOpeningAudio(seconds: number) {
@@ -214,6 +230,7 @@ function noise(dur: number, vol: number, freq: number, delay = 0) {
 
 export const sfx = {
   murmur,
+  unfoldPacket,
   step: () => noise(0.06, 0.18, 900 + Math.random() * 500),
   open: () => { tone(520, 0.09, 'square', 0.05); tone(780, 0.12, 'triangle', 0.08, undefined, 0.05); },
   close: () => tone(600, 0.1, 'triangle', 0.07, 380),

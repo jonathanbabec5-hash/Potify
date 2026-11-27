@@ -1,4 +1,5 @@
 import { readHeadLook } from '@/game/appearance';
+import { PacketInspection } from '@/ui/PacketInspection';
 import { HairOptions } from '@/ui/HairOptions';
 import { ResidentView } from '@/scene/ResidentView';
 import { lastFrameReport } from '@/game/frameBudget';
@@ -122,7 +123,7 @@ function ShopPanel({ shop }: { shop: ShopId }) {
   const c = SHOP_COPY[shop];
   return (
     <Sheet title={SHOPS[shop].name} kicker={c.kicker} accent={c.accent} wide={shop !== 'cafe'} test={`modal-shop-${shop}`}>
-      <p className="font-bold text-muted-foreground mb-4">{c.blurb}</p>
+      {shop !== 'seed' && <p className="font-bold text-muted-foreground mb-4">{c.blurb}</p>}
       {shop === 'seed' && <SeedShop />}
       {shop === 'rootworks' && <Rootworks />}
       {shop === 'exchange' && <Exchange />}
@@ -141,8 +142,13 @@ function Wallet() {
 function SeedShop() {
   const seeds = useG(s => s.seeds);
   const money = useG(s => s.money);
+  const [inspecting, setInspecting] = useState(false);
+  if (inspecting) return <PacketInspection onBack={() => setInspecting(false)} />;
   return (
     <>
+      <p className="font-bold text-muted-foreground mb-4">{SHOP_COPY.seed.blurb}</p>
+      <button type="button" className="chunk bg-cream px-4 py-3 mb-4 block" data-testid="packet-inspect"
+        onClick={() => setInspecting(true)}>Inspect Mira’s seed packet</button>
       <Wallet />
       <div className="grid sm:grid-cols-3 gap-3">
         {SEEDS.map(s => (

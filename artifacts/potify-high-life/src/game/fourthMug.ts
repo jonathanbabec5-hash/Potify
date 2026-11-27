@@ -29,6 +29,11 @@ export const MUG_SCENE = {
     tea: 'The blue mug is back on its hook. On the counter, a saucer covers a fresh cup. Lift it and steam wets your knuckles. A slip in Tessa’s hand reads JAX · NO MILK. Someone working late has tea to come home to.',
     please: 'A fresh packet leans against the sugar tin. FOURTH FLOOR NEEDS TEA, it says. Under the flap, in Tessa’s uphill handwriting, PLEASE. She’s tucked a pencil in the fold for whoever answers.',
   },
+  sugarTin: {
+    invitation: 'A paper sleeve keeps springing open in the sugar tin. Tessa has written on the lid, “If you pass Seed & Signal, ask Mira how she gets these to stay shut.”',
+    fold: 'The loose sleeve is still in the sugar tin. This time your thumb finds the short fold. The corner slips under it, and the paper stays put when you let go.',
+    pencil: 'A little pencil crescent shows above the rim of the sugar tin. You turn the sleeve before you open it. For once, all the sugar stays inside.',
+  },
 };
 
 type FestivalRecord = Record<string, 0 | 1>;

@@ -134,7 +134,7 @@ export default function Devlog() {
 
       <section className="closing-notes" id="feedback">
         <div className="changelog-panel">
-          <p className="eyebrow">One dated note</p>
+          <p className="eyebrow">Build notes</p>
           {devlogChangelog.map((item) => (
             <article className="changelog-entry" key={item.date}>
               <time dateTime={item.date}>{item.date}</time>

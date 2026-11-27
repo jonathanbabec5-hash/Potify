@@ -366,6 +366,7 @@ function FourthMug() {
   const memory = useG(s => s.life.fourthMug);
   const day = useG(s => s.day);
   const kitchen = useG(s => MUG_SCENE.project[s.projects[0] ?? 'none']);
+  const packetClue = useG(s => s.packetFold?.response?.clue);
   const recollection = useG(s => fourthMugRecollection(s.life.festivals));
   if (!recollection.length) return null;
   const observation = <p className="mb-3 leading-relaxed">{kitchen}</p>;
@@ -377,6 +378,11 @@ function FourthMug() {
           {day === memory.day ? MUG_SCENE.replies[memory.choice] : MUG_SCENE.later[memory.choice]}
         </p>
         {observation}
+        {day > memory.day && (
+          <p className="mb-3 leading-relaxed" data-testid="mug-sugar-tin">
+            {MUG_SCENE.sugarTin[packetClue ?? 'invitation']}
+          </p>
+        )}
         <details className="mt-4">
           <summary className="cursor-pointer py-3 font-bold">Remember that supper</summary>
           {paragraphs}

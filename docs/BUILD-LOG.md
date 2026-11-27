@@ -1,3 +1,9 @@
+# November 27, 2026 · The Fold at Seed & Signal
+
+Mira keeps a sample Moonmint packet at the shop counter. You can inspect it during an ordinary visit, remember something about her work, and return on a later day. In Canopy House, the paper in Tessa’s sugar tin gives the same visit a meaning of its own.
+
+The counter uses a 3D packet and the shop offers close views of it folded and open. A short paper sound accompanies the player lifting the flap. All four files are in the [Seed & Signal asset folder](../artifacts/potify-high-life/src/assets/lore/seed-and-signal/). The *From Seed to Smoke* field card provided the rhythm of observing something and coming back to it. Mira and the Moonmint packet belong to this game scene.
+
 # November 27, 2026 · Supper on four
 
 At the common kitchen in Canopy House, Tessa remembers someone who used to come down late for tea. A grower who helped at the autumn supper can inspect the table, recall how they helped, and make a small choice of their own. On a later day the counter tells the rest of that story. The scene also remembers what the grower bought with the first harvest.

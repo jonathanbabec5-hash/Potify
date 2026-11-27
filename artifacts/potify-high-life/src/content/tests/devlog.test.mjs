@@ -18,9 +18,11 @@ test('the public registry has 18 useful sections and stable, unique entry IDs', 
 });
 
 test('the devlog keeps the dated baseline, economy disclosure and spoiler-safe hints', () => {
-  assert.equal(devlogChangelog[0].date, '2026-11-04');
-  assert.equal(devlogChangelog.length, 1);
-  assert.match(devlogChangelog[0].version, /^v0\./);
+  const baseline = devlogChangelog.find(entry => entry.date === '2026-11-04');
+  assert.match(baseline?.version ?? '', /^v0\./);
+  const dates = devlogChangelog.map(entry => entry.date);
+  assert.deepEqual(dates, [...dates].sort().reverse());
+  assert.ok(devlogChangelog.some(entry => entry.title === 'The Fold at Seed & Signal'));
   assert.match(devlogDisclosure, /simSOL is nontransferable in-game money/);
   assert.match(devlogDisclosure, /not the real \$POTIFY token/);
   const publicText = JSON.stringify({ devlogSections, devlogChangelog, devlogDisclosure });

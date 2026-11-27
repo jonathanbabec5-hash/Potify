@@ -2,10 +2,12 @@ import { SurfaceBlock } from './Surfaces';
 import { SolidSurfaces } from './SolidSurfaces';
 import { useG } from '@/game/runtime';
 import { houseDate } from '@/game/house';
-import { useMemo, useRef } from 'react';
-import { useFrame } from '@react-three/fiber';
+import { Suspense, useMemo, useRef } from 'react';
+import { useFrame, useLoader } from '@react-three/fiber';
 import { RoundedBox } from '@react-three/drei';
 import * as THREE from 'three';
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import packetUrl from '@/assets/lore/seed-and-signal/mira-packet.glb?url';
 import { Warehouse } from './Warehouse';
 import { SHOPS, TOWN_TREES } from '@/game/world';
 import { lampMat, mat, seeded, signTex, tileTex, windowMat } from '@/scene/materials';
@@ -47,7 +49,22 @@ function Shop({ id }: { id: ShopKey }) {
         <meshBasicMaterial map={signTex(s.name.toUpperCase(), '#fff7e8', '#13293a')} transparent />
       </mesh>
       </SolidSurfaces>
-      {id === 'seed' && <SignalMast h={h} />}
+      {id === 'seed' && <>
+        <SignalMast h={h} />
+        <group name="SeedAndSignalCounter" position={[1.85, 1.04, d / 2 + 0.16]}>
+          <SolidSurfaces>
+            <SurfaceBlock at={[0, 0, 0]} size={[1.04, 0.08, 0.34]} finish="cedar" />
+            {[-0.35, 0.35].map(x => <mesh key={x} position={[x, -0.13, -0.12]} rotation-x={-0.55} material={mat('#605849')}>
+              <boxGeometry args={[0.06, 0.31, 0.08]} />
+            </mesh>)}
+          </SolidSurfaces>
+          <group position={[0, 0.294, 0]} rotation={[1.055, 0, -0.045]}>
+            <SurfaceBlock at={[0, -0.012, 0]} size={[0.44, 0.024, 0.565]} finish="cedar" color="#687360" />
+            <SurfaceBlock at={[0, 0.009, 0.274]} size={[0.44, 0.034, 0.026]} finish="cedar" />
+            <Suspense fallback={null}><CounterPacket /></Suspense>
+          </group>
+        </group>
+      </>}
       {id === 'rootworks' && (
         <>
           <mesh position={[w / 2 - 1, h + 1.2, -1]} material={mat('#c7774f')}><boxGeometry args={[0.7, 2, 0.7]} /></mesh>
@@ -83,6 +100,11 @@ function Shop({ id }: { id: ShopKey }) {
       )}
     </group>
   );
+}
+
+function CounterPacket() {
+  const asset = useLoader(GLTFLoader, packetUrl);
+  return <primitive object={asset.scene} scale={3.35} dispose={null} />;
 }
 
 function CafeDeliveryShelf({ x, z }: { x: number; z: number }) {

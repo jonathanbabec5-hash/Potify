@@ -104,7 +104,7 @@ export const devlogSections: RegistrySection[] = [
     title: 'NPCs and relationships',
     intro: 'The people who live here have their own work, words and reasons to come back.',
     entries: [
-      { id: 'NPC-001', title: 'Mira at Seed & Signal', detail: 'A neighbor who welcomes new growers and knows the quarter’s stories.', status: inDev },
+      { id: 'NPC-001', title: 'Mira at Seed & Signal', detail: 'Mira keeps a Moonmint packet on the counter. Look closely, then stop in on a later day to see what you remember.', status: 'Verified Playable' },
       { id: 'NPC-002', title: 'Moss at Rootworks', detail: 'A soil-minded shopkeeper whose practical advice has a poetic streak.', status: inDev },
       { id: 'NPC-003', title: 'Jun and the Low Tide radio', detail: 'An archivist-musician with changing lines and a growing friendship.', status: inDev },
       { id: 'NPC-004', title: 'Shylo, an occasional neighborhood companion', detail: 'A Norwegian Elkhound in a few quiet moments, never the center of the story.', status: concept },
@@ -205,6 +205,13 @@ export const devlogSections: RegistrySection[] = [
 ];
 
 export const devlogChangelog = [
+  {
+    date: '2026-11-27',
+    version: 'Canopy Quarter playtest',
+    title: 'The Fold at Seed & Signal',
+    body: 'Mira’s Moonmint packet is a small 3D prop on the shop counter. Two close views let you see the marks her hands have left in the paper. Your observation stays in your save between visits. A familiar piece of shop paper also turns up in Tessa’s kitchen.',
+    status: 'Verified Playable' as const,
+  },
   {
     date: '2026-11-04',
     version: 'v0.1 · First rooftop build',
