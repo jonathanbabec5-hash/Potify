@@ -3,8 +3,8 @@ import { BoxGeometry, CanvasTexture, Color, InstancedMesh, Matrix4, SRGBColorSpa
 import { lampMat, mat, seeded } from './materials';
 
 type Block = { x: number; y: number; z: number; w: number; h: number; d: number; color: string };
-const masonry = ['#815d4d', '#87796b', '#776e65', '#867d67', '#64736d'];
-const towers = ['#535d67', '#646574', '#576d73', '#6d6875'];
+const masonry = ['#bf9981', '#cbbcab', '#b29a88', '#b8aa96', '#9da5a1'];
+const towers = ['#9a9ba2', '#a9a5a3', '#9fa7a5', '#b5a8a2'];
 function block(x: number, y: number, z: number, w: number, h: number, d: number, color: string): Block {
   return { x, y, z, w, h, d, color };
 }
@@ -15,7 +15,7 @@ function neighborhood() {
   for (let row = -5; row <= 3; row++) {
     for (let col = -5; col <= 5; col++) {
       // Keep the canal, the player's roof, and the camera approach open.
-      if (row === -2 || (Math.abs(row) < 2 && Math.abs(col) < 2)) continue;
+      if (row === -2 || (row < 0 && Math.abs(col) <= 1) || (Math.abs(row) < 2 && Math.abs(col) < 2)) continue;
       const far = row <= -4 || Math.abs(col) >= 4;
       const x = col * 10 + rand() * 1.2, z = row * 12 + rand();
       const w = 5 + rand() * 3, d = 6 + rand() * 3;
@@ -35,15 +35,26 @@ function neighborhood() {
 // solid, and distant windows no longer submit thousands of separate faces.
 function makeFacade() {
   const canvas = document.createElement('canvas');
-  canvas.width = 96; canvas.height = 192;
+  canvas.width = 256; canvas.height = 512;
   const g = canvas.getContext('2d')!;
-  g.fillStyle = '#f2eae0'; g.fillRect(0,0,96,192);
   const random = seeded(802);
-  for (let y=6;y<184;y+=16) {
-    g.fillStyle = '#c8bdaf'; g.fillRect(0,y+8,96,2);
-    for (let x=8;x<94;x+=24) {
-      g.fillStyle = random()<0.26 ? '#ffdd9e' : '#6b7980';
-      g.fillRect(x,y,11,7);
+  g.fillStyle = '#d9c4aa'; g.fillRect(0,0,256,512);
+  for (let row=0;row<128;row++) {
+    for (let x=(row%2)*-6;x<256;x+=12) {
+      const n=Math.round(160+random()*42);
+      g.fillStyle='rgb('+n+','+(n-9)+','+(n-17)+')';
+      g.fillRect(x,row*4,11,3);
+    }
+  }
+  for (let y=9;y<505;y+=42) {
+    g.fillStyle='#aa9f8d'; g.fillRect(0,y+25,256,2);
+    for (let x=10;x<249;x+=32) {
+      g.fillStyle='#777468'; g.fillRect(x-2,y-2,20,27);
+      g.fillStyle=random()<0.23?'#e9be87':random()<0.4?'#76828a':'#565f63';
+      g.fillRect(x,y,16,23);
+      g.fillStyle='#aea08e';g.fillRect(x+7,y,1,23);g.fillRect(x,y+10,16,1);
+      g.fillStyle='#cabca7';g.fillRect(x-3,y+23,22,2);
+      if(random()<0.24){g.fillStyle='#c7b89f';g.fillRect(x,y,16,4+random()*5);}
     }
   }
   const texture = new CanvasTexture(canvas);

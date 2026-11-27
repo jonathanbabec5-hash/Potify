@@ -4,6 +4,8 @@
 
 This redesign brings the Roof 7B story together with the [first-harvest campaign](docs/marketing/2026-11-08-original-campaign.md). Start in the apartment, read the lease, meet the neighbors and carry your first crop downstairs to Green Exchange. Everything runs on fictional simSOL and browser saves.
 
+Apartment 7B opens at eye level. Drag across the scene to turn and tilt the view, then move with the joystick or WASD. The shoulder and overhead views remain in Pause → Settings. The apartment windows, lease desk, greenhouse rack and planters are walkable 3D scenes with textured surfaces.
+
 On a phone, the clock, objectives and notifications start hidden. Open the pause menu in the upper right and tap **Show overlays** or **Hide overlays**. The game remembers the setting on this browser.
 
 The market-square board carries signed crop orders and festival invitations. Upstairs, the notes belong to individual landings. Low Tide and the rooftop radio play the official POTIFY release *The Soil Remembers (Grow Room Version)*. [First Cycle source recording](https://github.com/jonathanbabec5-hash/potify-first-cycle-public-edition/blob/76c38a7629db38130de6a263a75cba02d578a022/public/assets/the-soil-remembers-grow-room.mp3).
@@ -76,9 +78,9 @@ To compare art changes on the same machine, build the downloadable edition and r
 PROFILE_SECONDS=60 npm run profile:mobile -- --check
 ```
 
-The benchmark walks the mature rooftop, evening greenhouse, floor 24 and market in a fresh offline save for each location. It reports average FPS, 95th-percentile frame time, draw calls and internal image width for a 390 × 844 touch viewport. The check fails if a route averages below 30 FPS. Compare the slow frames too, and repeat on a physical phone to check sustained performance under heat.
+The benchmark walks Apartment 7B, the mature rooftop, evening greenhouse, floor 24 and market in a fresh offline save for each location. It reports average FPS, 95th-percentile frame time, draw calls and internal image width for a 390 × 844 touch viewport. The check fails if a route averages below 30 FPS. Compare the slow frames too, and repeat on a physical phone to check sustained performance under heat.
 
-On November 27, 2026, a 60-second run per route in headless Chromium 158 with SwiftShader produced the following reference measurements. The build used the Full graphics setting with adaptive resolution. Width is the median internal 3D canvas width in pixels. The touch controls and text render at the browser's display resolution.
+Before the eye-level update on November 27, 2026, a 60-second run per route in headless Chromium 158 with SwiftShader produced the following reference measurements. The build used the Full graphics setting with adaptive resolution. Width is the median internal 3D canvas width in pixels. The touch controls and text render at the browser's display resolution.
 
 | Route | Average FPS | 95th-percentile frame | Median draw calls | Width |
 | --- | ---: | ---: | ---: | ---: |
@@ -88,3 +90,5 @@ On November 27, 2026, a 60-second run per route in headless Chromium 158 with Sw
 | Market square | 48.0 | 33.4 ms | 52 | 390 |
 
 An 8.8-second comparison route through the rooftop went from 9.1 to 40.2 FPS and from 447 to 87 median draw calls after the changes. Its 95th-percentile frame time went from 216.7 to 50.0 ms. Physical iPhone Safari measurements remain open.
+
+Run `node scripts/check-resident-reset.mjs` from the game package after building the offline edition to exercise both reset buttons with disposable saves. It covers declined storage removal, retry, the first lease interaction, and resuming the new resident.

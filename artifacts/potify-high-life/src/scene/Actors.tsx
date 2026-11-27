@@ -6,7 +6,7 @@ import { useFrame } from '@react-three/fiber';
 import { useKeyboardControls } from '@react-three/drei';
 import * as THREE from 'three';
 import { game } from '@/game/store';
-import { joy, npcPos, player, ui, useG, useUI, type Interactable, type NpcId } from '@/game/runtime';
+import { camCtl, joy, npcPos, player, ui, useG, useHudVisible, useUI, type Interactable, type NpcId } from '@/game/runtime';
 import { CLOSED_WARD_COLLIDERS, NPCS, PLAYER_HAIR, ROOF_BOUNDS, roofColliders, STATIC_TARGETS, TOWN_BOUNDS, TOWN_COLLIDERS, npcSchedule, zoneAt, type AABB } from '@/game/world';
 import { sfx } from '@/game/audio';
 import { Character } from '@/scene/Character';
@@ -33,6 +33,7 @@ export function Player() {
   const group = useRef<THREE.Group>(null);
   const speed = useRef(0);
   const [, getKeys] = useKeyboardControls<Ctl>();
+  const firstPerson = useG(s => s.settings.camera === 1);
   const shirt = useG(s => s.shirt);
   const skin = useG(s => s.skin);
   const leased = useG(s => s.warehouse.leased);
@@ -64,6 +65,10 @@ export function Player() {
       const k = getKeys();
       mx = (k.right ? 1 : 0) - (k.left ? 1 : 0) + joy.x;
       mz = (k.back ? 1 : 0) - (k.forward ? 1 : 0) + joy.y;
+      const cos = Math.cos(camCtl.yawOffset), sin = Math.sin(camCtl.yawOffset);
+      const side = mx;
+      mx = side * cos - mz * sin;
+      mz = side * sin + mz * cos;
       run = k.run;
     }
     const len = Math.hypot(mx, mz);
@@ -104,6 +109,7 @@ export function Player() {
       group.current.rotation.y = player.yaw;
     }
 
+    if (!u.inGame) return;
     const zone = zoneAt(u.area, player.x, player.z);
     if (zone !== u.zone) { ui.set({ zone }); game.setPosition({ x: player.x, z: player.z, zone, ...(u.area === 'tower' ? {floor:level} : {}) }); }
     const now = st.clock.elapsedTime;
@@ -132,7 +138,6 @@ export function Player() {
       }
     }
     if (best && best.kind === 'bed') best = { ...best, verb: bedPrompt(best.index ?? 0) };
-    if (!u.inGame) best = null;
     const prev = u.prompt;
     if ((prev?.id ?? null) !== (best?.id ?? null) || prev?.verb !== best?.verb || (best?.kind === 'npc' && prev && Math.hypot(prev.x - best.x, prev.z - best.z) > 0.3)) {
       ui.set({ prompt: best });
@@ -140,7 +145,7 @@ export function Player() {
   });
 
   return (
-    <group ref={group}>
+    <group ref={group} visible={!firstPerson}>
       <Character shirt={shirt} skin={skin} hair={PLAYER_HAIR} variant="player" speed={speed} />
     </group>
   );
@@ -192,6 +197,7 @@ export function NPCs() {
 }
 
 export function PromptMarker() {
+  const visible = useHudVisible();
   const prompt = useUI(s => s.prompt);
   const floor = useUI(s => s.floor);
   const r = useRef<THREE.Group>(null);
@@ -202,7 +208,7 @@ export function PromptMarker() {
     r.current.rotation.y = st.clock.elapsedTime * 1.5;
     r.current.scale.setScalar(1 + Math.sin(st.clock.elapsedTime * 5) * 0.06);
   });
-  if (!prompt) return null;
+  if (!visible || !prompt) return null;
   const h = prompt.kind === 'npc' ? 2.7 : prompt.kind === 'bed' ? 0.7 : 0.05;
   return (
     <group ref={r} position={[prompt.x, prompt.area === 'tower' ? (floor-1)*STOREY : 0, prompt.z]}>

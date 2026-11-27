@@ -384,3 +384,27 @@ test('earlier saves accept the overlay preference and retain it after reloading'
   assert.deepEqual(restored.getState().position, saved.position);
   assert.equal(validateSave({ ...saved, settings: { ...saved.settings, showHud: 'off' } }), false);
 });
+
+test('reset protects the new lease from idle position writes and preserves a save if erasure fails', async () => {
+  localStorage.removeItem(SAVE_KEY);
+  const { game: resident } = await import('../store.ts?resident-reset');
+  const lease = { x: -4.4, z: -2.55, zone: 'tower', floor: 7 };
+  const market = { x: 81.6, z: 5, zone: 'town' };
+  resident.start({ name: 'Old resident' });
+  resident.setPosition(market);
+  resident.save();
+  const stored = localStorage.getItem(SAVE_KEY);
+  const remove = localStorage.removeItem;
+  try {
+    localStorage.removeItem = () => { throw new Error('storage unavailable'); };
+    assert.equal(resident.reset().ok, false);
+    assert.deepEqual(resident.getState().position, market);
+    assert.equal(localStorage.getItem(SAVE_KEY), stored);
+  } finally { localStorage.removeItem = remove; }
+  assert.equal(resident.reset().ok, true);
+  resident.setPosition(market);
+  assert.deepEqual(resident.getState().position, lease);
+  assert.equal(localStorage.getItem(SAVE_KEY), null);
+  resident.start({ name: 'New resident' });
+  assert.deepEqual(JSON.parse(localStorage.getItem(SAVE_KEY)).position, lease);
+});

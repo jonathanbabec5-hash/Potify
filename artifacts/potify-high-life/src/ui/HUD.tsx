@@ -5,7 +5,7 @@ import { game, objective, formatTime } from '@/game/store';
 import { joy, openModal, ui, useG, useHudVisible, useUI, type Modal } from '@/game/runtime';
 import { interact } from '@/game/interact';
 import { sfx } from '@/game/audio';
-import { CAMERA_PRESETS } from '@/scene/GameCanvas';
+import { CAMERA_ORDER } from '@/scene/GameCanvas';
 import { Kbd, Sim } from '@/ui/common';
 
 const ZONE_TITLES: Record<string, [string, string]> = {
@@ -18,7 +18,8 @@ const ZONE_TITLES: Record<string, [string, string]> = {
 
 export function setCamera(delta: number) {
   const c = game.getState().settings.camera;
-  const n = Math.max(0, Math.min(CAMERA_PRESETS.length - 1, Math.round(c) + delta));
+  const index = Math.max(0, CAMERA_ORDER.indexOf(Math.round(c)));
+  const n = CAMERA_ORDER[Math.max(0, Math.min(CAMERA_ORDER.length - 1, index + delta))];
   if (n !== c) { game.setSettings({ camera: n }); sfx.click(); }
 }
 
@@ -160,10 +161,10 @@ function TouchControls({ showCamera }: { showCamera: boolean }) {
   const end = () => { pid.current = null; setKnob({ x: 0, y: 0 }); joy.x = 0; joy.y = 0; };
   return (
     <>
-      <div ref={base} className="absolute bottom-6 left-5 w-36 h-36 rounded-full border-[3px] border-ink bg-cream/50 pointer-events-auto touch-none"
+      <div ref={base} className="absolute bottom-6 left-5 w-28 h-28 rounded-full border border-white/45 bg-black/20 pointer-events-auto touch-none"
         onPointerDown={e => { pid.current = e.pointerId; (e.target as HTMLElement).setPointerCapture(e.pointerId); move(e); }}
         onPointerMove={move} onPointerUp={end} onPointerCancel={end} data-testid="joystick">
-        <div className="absolute left-1/2 top-1/2 w-14 h-14 -ml-7 -mt-7 rounded-full bg-tangerine border-[3px] border-ink shadow-[0_4px_0_#13293a]"
+        <div className="absolute left-1/2 top-1/2 w-11 h-11 -ml-[1.375rem] -mt-[1.375rem] rounded-full bg-white/30 border border-white/60"
           style={{ transform: `translate(${knob.x}px, ${knob.y}px)` }} />
       </div>
       <div className="absolute bottom-6 right-5 flex flex-col items-end gap-3 pointer-events-auto">
@@ -172,8 +173,8 @@ function TouchControls({ showCamera }: { showCamera: boolean }) {
           <button onClick={() => setCamera(1)} className="chunk bg-cream w-12 h-12 flex items-center justify-center" aria-label="Camera higher"><ZoomOut className="w-5 h-5" /></button>
         </div>}
         <button onClick={() => interact(ui.get().prompt)} disabled={!prompt}
-          className={`chunk w-28 h-28 !rounded-full flex flex-col items-center justify-center text-center px-2 ${prompt ? 'bg-butter' : 'bg-cream/70'}`} data-testid="button-action">
-          <span className="font-display text-xl leading-none">{prompt ? prompt.verb : 'Action'}</span>
+          className={`rounded-full border w-24 h-24 flex flex-col items-center justify-center text-center px-2 text-white ${prompt ? 'border-amber-100/70 bg-stone-950/70' : 'border-white/35 bg-stone-950/35'}`} data-testid="button-action">
+          <span className="font-semibold text-base leading-none">{prompt ? prompt.verb : 'Action'}</span>
           {prompt && <span className="text-[11px] font-black leading-tight mt-1 line-clamp-2">{prompt.label}</span>}
         </button>
       </div>

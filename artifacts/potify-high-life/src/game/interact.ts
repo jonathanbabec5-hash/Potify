@@ -1,20 +1,48 @@
 import { game } from '@/game/store';
-import { act, fx, openModal, player, toast, ui, type Area, type Interactable } from '@/game/runtime';
+import { act, camCtl, fx, joy, openModal, player, toast, ui, type Area, type Interactable } from '@/game/runtime';
 import { RECORD_TITLE, sfx } from '@/game/audio';
+import { STOREY, stairHeight } from './house';
 import { zoneAt } from '@/game/world';
+
+let transferTimer: ReturnType<typeof setTimeout> | undefined;
+let fadeTimer: ReturnType<typeof setTimeout> | undefined;
+
+export function restoreResident(inGame: boolean) {
+  const { x, z, zone, floor = 7 } = game.getState().position;
+  const area = zone === 'tower' || zone === 'town' ? zone : 'roof';
+  player.x = x;
+  player.z = z;
+  player.y = zone === 'tower' ? (floor - 1) * STOREY + stairHeight(x, z) : 0;
+  player.speed = joy.x = joy.y = 0;
+  ui.set({ area, zone, floor, inGame, modal: null, prompt: null, fading: false });
+}
+
+export function resetResident() {
+  const result = game.reset();
+  if (result.ok) {
+    clearTimeout(transferTimer);
+    clearTimeout(fadeTimer);
+    fx.parts.length = fx.pending.length = 0;
+    player.yaw = Math.PI;
+    camCtl.yawOffset = 0;
+    camCtl.pitch = -0.15;
+    restoreResident(false);
+  }
+  return result;
+}
 
 export function teleport(area: Area, x: number, z: number, yaw: number, floor = 1) {
   if (ui.get().fading) return;
   ui.set({ fading: true, prompt: null });
   sfx.door();
-  setTimeout(() => {
+  transferTimer = setTimeout(() => {
     player.x = x; player.z = z; player.yaw = yaw;
     const zone = zoneAt(area, x, z);
     ui.set({ area, zone, floor, prompt: null });
     game.setPosition({ x, z, zone, ...(area === 'tower' ? { floor } : {}) });
     game.save();
   }, 380);
-  setTimeout(() => ui.set({ fading: false }), 820);
+  fadeTimer = setTimeout(() => ui.set({ fading: false }), 820);
 }
 
 export function interact(t: Interactable | null) {
@@ -64,6 +92,6 @@ export function interact(t: Interactable | null) {
 export function doSleep() {
   ui.set({ fading: true, modal: null });
   sfx.sleep();
-  setTimeout(() => { act(() => game.sleep()); }, 400);
-  setTimeout(() => ui.set({ fading: false }), 1300);
+  transferTimer = setTimeout(() => { act(() => game.sleep()); }, 400);
+  fadeTimer = setTimeout(() => ui.set({ fading: false }), 1300);
 }

@@ -14,6 +14,7 @@ assert.ok(seconds >= 4 && Number.isFinite(seconds), 'PROFILE_SECONDS must be at 
 const args = process.argv.slice(2);
 const build = args.find(arg => !arg.startsWith('--')) || 'dist/offline/POTIFY-A-Wonderful-High-Life.html';
 const routes = [
+  { name: 'Apartment 7B', zone: 'tower', x: -4.4, z: -2.55, floor: 7, minute: 510 },
   { name: 'Rooftop beds', zone: 'rooftop', x: 0, z: 11.3, minute: 510 },
   { name: 'Greenhouse', zone: 'greenhouse', x: 6.9, z: -4.4, minute: 1110 },
   { name: 'Canopy House', zone: 'tower', x: 0, z: 3, floor: 24, minute: 570 },

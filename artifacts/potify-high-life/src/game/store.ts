@@ -526,6 +526,7 @@ export const game = {
     return 'Settings updated.';
   },
   setPosition(position: GameState['position']): void {
+    if (!state.started) return;
     if (!finite(position.x, -1000, 1000) || !finite(position.z, -1000, 1000) ||
       !(position.zone === 'tower' ? validFloor(position.floor) : ['town', 'rooftop', 'greenhouse', 'apartment'].includes(position.zone))) return;
     if (position.x === state.position.x && position.z === state.position.z && position.zone === state.position.zone && position.floor === state.position.floor) return;
@@ -548,13 +549,13 @@ export const game = {
   save(): string {
     return persist() ? 'Game saved on this browser.' : (state.saveError ?? 'Saving is unavailable.');
   },
-  reset(): string {
-    try { localStorage.removeItem(SAVE_KEY); } catch { return 'Could not clear browser storage. Your game has not been reset.'; }
+  reset(): { ok: boolean; message: string } {
+    try { localStorage.removeItem(SAVE_KEY); } catch { return { ok: false, message: 'This browser could not erase the save. Your current resident is still here.' }; }
     saveLocked = false;
     pendingTime = 0;
     sinceSave = 0;
     update(freshState());
-    return 'A fresh rooftop story is ready. Your previous local game was cleared.';
+    return { ok: true, message: 'Your new lease is ready in Apartment 7B.' };
   },
 };
 

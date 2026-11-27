@@ -14,9 +14,9 @@ export function SolidSurfaces({ children, revision = '' }: { children: ReactNode
     root.traverseVisible(object => {
       if (!(object instanceof Mesh) || object instanceof InstancedMesh || object instanceof SkinnedMesh) return;
       const m = object.material;
-      if (!(m instanceof MeshStandardMaterial) || !m.flatShading || m.map || m.transparent ||
+      if (!(m instanceof MeshStandardMaterial) || !m.flatShading || (m.map && !m.userData.batchSurface) || m.transparent ||
           m.vertexColors || m.emissive.getHex() !== 0 || !object.geometry.attributes.normal) return;
-      const key = [m.roughness, m.metalness, m.side, object.castShadow, object.receiveShadow].join('/');
+      const key = [m.map?.id, m.roughness, m.metalness, m.side, object.castShadow, object.receiveShadow].join('/');
       const set = sets.get(key) ?? [];
       set.push(object);
       sets.set(key, set);
@@ -29,7 +29,7 @@ export function SolidSurfaces({ children, revision = '' }: { children: ReactNode
         const g = source.index ? source.toNonIndexed() : source.clone();
         g.applyMatrix4(new Matrix4().multiplyMatrices(inverse, part.matrixWorld));
         for (const name of Object.keys(g.attributes)) {
-          if (name !== 'position' && name !== 'normal') g.deleteAttribute(name);
+          if (name !== 'position' && name !== 'normal' && !(name === 'uv' && (part.material as MeshStandardMaterial).map)) g.deleteAttribute(name);
         }
         const color = (part.material as MeshStandardMaterial).color;
         const rgb = new Float32Array(g.attributes.position.count * 3);

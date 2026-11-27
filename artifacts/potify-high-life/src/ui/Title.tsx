@@ -1,9 +1,10 @@
 import { devlogUrl } from '@/game/routes';
-import campaignArt from '../../../../docs/marketing/assets/2026-11-08-potify-city-concept.jpg';
+import campaignArt from '../assets/surfaces/roof-title.webp';
 import { useState } from 'react';
 import { ArrowRight, Check, Play, RotateCcw, Sprout } from 'lucide-react';
 import { game } from '@/game/store';
-import { act, player, ui, useG } from '@/game/runtime';
+import { act, useG } from '@/game/runtime';
+import { resetResident, restoreResident } from '@/game/interact';
 import { configureAudio, sfx, unlockAudio } from '@/game/audio';
 import { SHIRTS, SKINS, Swatches, AvatarFigure } from '@/ui/common';
 
@@ -17,11 +18,11 @@ export function Title() {
   const [skin, setSkin] = useState(saved.skin || SKINS[1]);
   const [ack, setAck] = useState(false);
 
+  const [resetError, setResetError] = useState('');
+
   const enter = () => {
-    const { x, z, zone, floor } = game.getState().position;
-    player.x=x; player.z=z;
+    restoreResident(true);
     unlockAudio(); configureAudio(game.getState().settings, true); sfx.harvest();
-    ui.set({ inGame:true, modal:null, prompt:null, area:zone==='tower'||zone==='town'?zone:'roof', zone, floor:floor??7 });
   };
   const cont = () => { unlockAudio(); if (started && acknowledged) enter(); else { setStep('create'); sfx.open(); } };
   const begin = () => {
@@ -40,7 +41,7 @@ export function Title() {
           <h1 className="city-wordmark leading-[0.85] mt-3" data-testid="text-title">POTIFY</h1>
           <p className="font-display text-cream text-2xl md:text-4xl mt-5 [text-shadow:0_3px_0_#13293a]">A Wonderful High Life</p>
           <p className="text-cream/85 font-bold mt-4 max-w-md mx-auto md:mx-0 text-sm md:text-base">
-            Your lease is on the table in 7B. Twenty-four floors, a garden on the roof, and a whole building learning your name. Come home in time for supper.
+            Your lease is on the table in 7B. Twenty-four floors, a garden on the roof, and a whole building learning your name.
           </p>
         </div>
 
@@ -58,12 +59,13 @@ export function Title() {
               ) : (
                 <p className="font-bold text-muted-foreground mb-4">No save on this device yet. Your rooftop is waiting.</p>
               )}
+              <p className="text-sm mb-3">Drag the scene to look around. Walk with the joystick or WASD.</p>
               <div className="grid gap-3">
                 <button className="chunk bg-tangerine text-cream py-4 text-xl flex items-center justify-center gap-2" onClick={cont} data-testid="button-continue">
                   <Play className="w-5 h-5 fill-current" /> {started ? 'Continue' : 'New life'}
                 </button>
                 {started && (
-                  <button className="chunk bg-cream py-3 flex items-center justify-center gap-2" onClick={() => { sfx.click(); setStep('confirmReset'); }} data-testid="button-new-game">
+                  <button className="chunk bg-cream py-3 flex items-center justify-center gap-2" onClick={() => { sfx.click(); setResetError(''); setStep('confirmReset'); }} data-testid="button-new-game">
                     <RotateCcw className="w-4 h-4" /> Start over
                   </button>
                 )}
@@ -84,10 +86,12 @@ export function Title() {
             <div className="panel p-6 pop">
               <h2 className="font-display text-2xl">Start a brand-new life?</h2>
               <p className="font-bold text-muted-foreground mt-2">This erases your rooftop, harvests, friendships and simSOL on this device. It cannot be undone.</p>
+              {resetError && <p role="alert" className="mt-3 font-bold">{resetError}</p>}
               <div className="grid grid-cols-2 gap-3 mt-5">
                 <button className="chunk bg-cream py-3" onClick={() => setStep('menu')} data-testid="button-cancel-reset">Keep my roof</button>
                 <button className="chunk bg-coral text-cream py-3" data-testid="button-confirm-reset" onClick={() => {
-                  act(() => game.reset());
+                  const result = resetResident();
+                  if (!result.ok) { setResetError(result.message); return; }
                   setName('Rooftop Rookie'); setShirt('#c7774f'); setSkin(SKINS[1]); setAck(false); setStep('create');
                 }}>Erase and begin</button>
               </div>

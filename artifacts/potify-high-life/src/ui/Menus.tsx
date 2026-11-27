@@ -8,9 +8,9 @@ import { WAREHOUSE, DELIVERY_STOPS, PROJECTS, projectPrice, type RoofProject, EC
 import { act, closeModal, fx, openModal, player, toast, ui, useG, useHudVisible, useUI, type NpcId, type ShopId } from '@/game/runtime';
 import { FILED_NOTES, SIDE_TASKS, STORY_PAGES, storyChoices, storyLine, storyObjective, type SideTask, type StoryPage } from '@/game/story';
 import { BEDS, NPCS, SHOPS, npcSchedule } from '@/game/world';
-import { doSleep } from '@/game/interact';
+import { doSleep, resetResident } from '@/game/interact';
 import { RECORD_TITLE, sfx } from '@/game/audio';
-import { CAMERA_PRESETS } from '@/scene/GameCanvas';
+import { CAMERA_ORDER, CAMERA_PRESETS } from '@/scene/GameCanvas';
 import { AvatarFigure, Kbd, Meter, SHIRTS, SKINS, Sheet, Sim, Swatches } from '@/ui/common';
 
 const seedName = (id: string | null) => SEEDS.find(s => s.id === id)?.name ?? 'Unknown';
@@ -697,15 +697,17 @@ function SettingsPanel() {
   const saveError = useG(s => s.saveError);
   const savedAt = useG(s => s.savedAt);
   const [confirm, setConfirm] = useState(false);
+  const [resetError, setResetError] = useState('');
   return (
     <Sheet title="Settings" kicker="Sound, camera, graphics, save" accent="bg-jade" test="modal-settings">
       <Toggle on={!st.muted} onClick={() => game.setSettings({ muted: !st.muted })} label="Sound effects and audio" test="toggle-sound" />
       <Toggle on={st.music} onClick={() => game.setSettings({ music: !st.music })} label={'POTIFY radio · ' + RECORD_TITLE} test="toggle-music" />
+      <p className="mt-3 text-sm">Drag the scene to look around. Movement follows the direction you face.</p>
       <p className="font-bold mt-3">Camera <span className="text-xs text-muted-foreground">(<Kbd>Q</Kbd> closer, <Kbd>R</Kbd> higher)</span></p>
       <div className="grid grid-cols-4 gap-2 mt-1.5">
-        {CAMERA_PRESETS.map((c, i) => (
-          <button key={c.name} onClick={() => { game.setSettings({ camera: i }); sfx.click(); }} data-testid={`button-camera-${i}`}
-            className={`chunk py-2 text-sm ${Math.round(st.camera) === i ? 'bg-butter' : 'bg-cream'}`}>{c.name}</button>
+        {CAMERA_ORDER.map(i => (
+          <button key={i} onClick={() => { game.setSettings({ camera: i }); sfx.click(); }} data-testid={`button-camera-${i}`}
+            className={`chunk py-2 text-sm ${Math.round(st.camera) === i ? 'bg-butter' : 'bg-cream'}`}>{CAMERA_PRESETS[i].name}</button>
         ))}
       </div>
       <p className="font-bold mt-4">Graphics</p>
@@ -727,9 +729,10 @@ function SettingsPanel() {
             <button className="chunk bg-coral text-cream py-2" onClick={() => setConfirm(true)} data-testid="button-reset">Reset save</button>
           ) : (
             <button className="chunk bg-destructive text-cream py-2" data-testid="button-confirm-reset-settings"
-              onClick={() => { act(() => game.reset()); ui.set({ modal: null, inGame: false, area: 'roof', zone: 'rooftop' }); player.x = 0; player.z = 4; }}>Really erase?</button>
+              onClick={() => { const result = resetResident(); if (!result.ok) setResetError(result.message); }}>Really erase?</button>
           )}
         </div>
+        {resetError && <p role="alert" className="mt-3 font-bold">{resetError}</p>}
       </div>
     </Sheet>
   );

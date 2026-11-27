@@ -1,3 +1,4 @@
+import { SurfaceBlock } from './Surfaces';
 import { SolidSurfaces } from './SolidSurfaces';
 import { useG } from '@/game/runtime';
 import { houseDate } from '@/game/house';
@@ -21,7 +22,7 @@ function Shop({ id }: { id: ShopKey }) {
   const h = id === 'lab' ? 4 : 4.6;
   return (
     <group position={[s.x, 0, s.z]} rotation-y={rotY}>
-      <RoundedBox args={[w, h, d]} radius={0.3} smoothness={2} position={[0, h / 2, 0]} material={mat(s.color)} castShadow receiveShadow />
+      <SurfaceBlock at={[0,h/2,0]} size={[w,h,d]} finish="brick" color={id==='lab'?'#d3ccc3':'#e0d4bd'} tile={2.2} />
       {id === 'lab' ? (
         <mesh position={[0, h, 0]} material={mat(s.roof)}><sphereGeometry args={[2.6, 8, 5, 0, Math.PI * 2, 0, Math.PI / 2]} /></mesh>
       ) : (

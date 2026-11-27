@@ -1,6 +1,8 @@
+import { LeaseApartment, LoftWindows, WindowLight } from './LeaseApartment';
+import { SurfaceBlock } from './Surfaces';
 import { SolidSurfaces } from './SolidSurfaces';
-import { useEffect, useMemo, useRef } from 'react';
-import { CanvasTexture, DoubleSide, RepeatWrapping, SRGBColorSpace } from 'three';
+import { useRef } from 'react';
+import { DoubleSide } from 'three';
 import { useTexture } from '@react-three/drei';
 import housePrint from '../../../../docs/marketing/assets/2026-11-08-potify-city-concept.jpg';
 import { useG, useUI } from '@/game/runtime';
@@ -49,74 +51,12 @@ function Sign({
     </mesh>
   );
 }
-function Floorboards() {
-  const wood = useMemo(() => {
-    const canvas = document.createElement('canvas');
-    canvas.width = 256;
-    canvas.height = 128;
-    const ctx = canvas.getContext('2d')!;
-    for (let row = 0; row < 8; row++) {
-      const hue = ['#94836b', '#9e8c71', '#927e64', '#a18b70'][row % 4];
-      ctx.fillStyle = hue;
-      ctx.fillRect(0, row * 16, 256, 16);
-      ctx.fillStyle = '#786953';
-      ctx.fillRect(0, row * 16, 256, 1);
-      ctx.fillRect((row * 57) % 240, row * 16, 1, 16);
-      for (let grain = 0; grain < 6; grain++) {
-        ctx.fillStyle = grain % 2 ? '#ffffff0a' : '#372e2410';
-        ctx.fillRect((row * 29 + grain * 51) % 218, row * 16 + 2 + grain * 2, 35, 1);
-      }
-    }
-    const t = new CanvasTexture(canvas);
-    t.wrapS = t.wrapT = RepeatWrapping;
-    t.repeat.set(2, 3);
-    t.colorSpace = SRGBColorSpace;
-    return t;
-  }, []);
-  useEffect(() => () => wood.dispose(), [wood]);
-  return (
-    <mesh position={[-3.04, 0.009, -0.15]} rotation-x={-Math.PI / 2} receiveShadow>
-      <planeGeometry args={[11.38, 11.58]} />
-      <meshLambertMaterial map={wood} />
-    </mesh>
-  );
-}
-function FlatDetails() {
+function CampaignPrint() {
   const print = useTexture(housePrint);
-  return (
-    <>
-      <Box at={[-5.35, 2.01, -5.39]} size={[2.17, 1.48, 0.1]} color="#665035" />
-      <mesh position={[-5.35, 2.01, -5.325]}>
-        <planeGeometry args={[2.01, 1.32]} />
-        <meshBasicMaterial map={print} />
-      </mesh>
-      <Box at={[-4.15, 0.022, -0.6]} size={[4.7, 0.03, 2.75]} color="#686957" />
-      {[-1.83, -1.7, 0.5, 0.63].map((z) => (
-        <Box key={z} at={[-4.15, 0.043, z]} size={[4.56, 0.013, 0.06]} color="#d4b68b" />
-      ))}
-      {[-7.35, -7, -6.65, -6.3].map((x) => (
-        <Box key={x} at={[x, 0.875, -4.65]} size={[0.12, 0.02, 1.55]} color="#a9ae87" />
-      ))}
-      <Box at={[-7.4, 1.05, -5.37]} size={[2.25, 1.0, 0.13]} color="#796148" />
-      <Box at={[-3.5, 1.22, -4.75]} size={[0.08, 0.43, 0.08]} color="#746443" />
-      <mesh position={[-3.5, 1.55, -4.75]} material={mat('#dbbd8c')}>
-        <coneGeometry args={[0.29, 0.36, 10]} />
-      </mesh>
-      <mesh position={[-0.86, 0.71, -4.32]} material={mat('#926953')}>
-        <cylinderGeometry args={[0.32, 0.23, 0.52, 9]} />
-      </mesh>
-      {[-0.18, 0.08, 0.24].map((x, i) => (
-        <mesh
-          key={x}
-          position={[-0.86 + x, 1.18 + i * 0.12, -4.33]}
-          rotation-z={x * 2}
-          material={mat('#627653')}
-        >
-          <octahedronGeometry args={[0.27]} />
-        </mesh>
-      ))}
-    </>
-  );
+  return <group position={[-8.54,1.85,-3.65]} rotation-y={Math.PI/2}>
+    <SurfaceBlock at={[0,0,0]} size={[1.46,0.98,0.06]} finish="cedar" />
+    <mesh position-z={0.035}><planeGeometry args={[1.35,0.875]}/><meshLambertMaterial map={print}/></mesh>
+  </group>;
 }
 function Stairwell() {
   const run = STAIR_START - TURN,
@@ -191,14 +131,8 @@ function Room({ floor, archive }: { floor: number; archive: boolean }) {
   if (floor === 7)
     return (
       <>
-        <FlatDetails />
-        <Box at={[-7, 0.38, -4.65]} size={[2.4, 0.66, 1.65]} color="#70654e" />
-        <Box at={[-7, 0.76, -4.65]} size={[2.38, 0.2, 1.58]} color="#79917b" />
-        <Box at={[-7.76, 0.93, -4.65]} size={[0.55, 0.17, 1.35]} color="#e8dfbd" />
-        <Box at={[-3.65, 0.5, -4.8]} size={[4.15, 1, 1.1]} color="#976f4c" />
-        <Box at={[-4.4, 1.04, -4.71]} size={[0.7, 0.045, 0.48]} color="#e4cc92" />
-        <Box at={[-1.8, 1.09, -4.7]} size={[0.61, 0.15, 0.49]} color="#486656" />
-        <Sign text="7B   /   HOME" x={-3.7} y={2.13} z={-5.47} />
+        <LeaseApartment />
+        <CampaignPrint />
         {Array.from({ length: Math.min(4, albums) }, (_, i) => (
           <Box
             key={i}
@@ -345,7 +279,8 @@ export function Tower() {
       <group position-y={(floor - 1) * STOREY}>
         <Box at={[-3.04, -0.13, -0.15]} size={[11.38, 0.26, 11.58]} color="#988978" />
         <Box at={[5.55, -0.14, 3.42]} size={[5.9, 0.28, 4.84]} color="#8e8374" />
-        <Floorboards />
+        <SurfaceBlock at={[-3.04,-0.024,-0.15]} size={[11.38,0.065,11.58]} finish="cedar" color="#c9bda7" tile={2.4}/>
+        {floor === 7 && <WindowLight strength={Math.max(0,Math.sin((minute*30-360)*Math.PI/720))*0.36}/>}
         {hasLandingBoard(floor) && (
           <group position={[-5.15, floor === 1 ? 1.8 : 1.7, floor === 1 ? -4.53 : -5.32]}>
             <Box at={[0, 0, 0]} size={[1.12, 0.86, 0.09]} color="#9b794e" />
@@ -356,12 +291,7 @@ export function Tower() {
             </group>)}
           </group>
         )}
-        <Box at={[-3.02, 0.71, -5.67]} size={[11.45, 1.42, 0.23]} color="#a99b82" />
-        <Box at={[-3.02, 3.03, -5.67]} size={[11.45, 0.23, 0.23]} color="#998b74" />
-        {[-8.64, -4.95, -1.15, 2.56].map((x) => (
-          <Box key={x} at={[x, 2.2, -5.67]} size={[0.14, 1.56, 0.23]} color="#5b655b" />
-        ))}
-        <Box at={[-3.02, 1.42, -5.5]} size={[11.45, 0.12, 0.4]} color="#71604b" />
+        <LoftWindows apartment={floor === 7}/>
         <Box at={[-8.66, 0.49, -0.1]} size={[0.19, 0.98, 11.55]} color="#82765e" />
         {[-5.65, -2.9, -0.15, 2.6, 5.35].map((z) => (
           <Box key={z} at={[-8.64, 1.81, z]} size={[0.12, 2.5, 0.1]} color="#52655b" />

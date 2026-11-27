@@ -1,9 +1,11 @@
 import { Matrix4, InstancedMesh } from 'three';
+import { SurfaceBlock } from './Surfaces';
+import { GrowRoom } from './GrowRoom';
 import { WorkshopBench } from './WorkshopBench';
 import { SolidSurfaces } from './SolidSurfaces';
 import { useEffect, useLayoutEffect, useMemo, useRef } from 'react';
 import { RoundedBox } from '@react-three/drei';
-import { useUI } from '@/game/runtime';
+import { useG, useUI } from '@/game/runtime';
 import { STORY_POSITIONS } from '@/game/world';
 import { glassMat, lampMat, mat, signTex, tileTex, windowMat } from '@/scene/materials';
 import { Beds } from '@/scene/Plants';
@@ -30,12 +32,11 @@ function StringLights() {
 
 export function Rooftop() {
   const zone = useUI(s => s.zone);
-  const floor = useMemo(() => tileTex('#968778', '#8e8171', 8, 6), []);
-  const ghFloor = useMemo(() => tileTex('#cfe9d8', '#b9dcc6', 6, 2), []);
   const aptFloor = useMemo(() => tileTex('#e9c79a', '#ddb788', 4, 3), []);
-  useEffect(() => () => { floor.dispose(); ghFloor.dispose(); aptFloor.dispose(); }, [floor, ghFloor, aptFloor]);
-  const inApt = zone === 'apartment';
-  const inGh = zone === 'greenhouse';
+  useEffect(() => () => { aptFloor.dispose(); }, [aptFloor]);
+  const overhead = useG(s => s.settings.camera > 1);
+  const inApt = overhead && zone === 'apartment';
+  const inGh = overhead && zone === 'greenhouse';
   return (
     <group>
       <group position-y={-86.4} scale={[1.4,2.15,1.4]}><CanalSkyline /></group>
@@ -45,10 +46,7 @@ export function Rooftop() {
       {Array.from({ length: 24 }).map((_, i) => (
         <mesh key={i} position={[0, -3 - i * 3.6, 12.55]} material={windowMat}><boxGeometry args={[20, 1.6, 0.1]} /></mesh>
       ))}
-      <mesh rotation-x={-Math.PI / 2} position={[0, 0, 1]} receiveShadow>
-        <planeGeometry args={[24.6, 22.6]} />
-        <meshLambertMaterial map={floor} />
-      </mesh>
+      <SurfaceBlock at={[0,-0.036,1]} size={[24.6,0.07,22.6]} finish="concrete" color="#deccb3" tile={3.2}/>
       {/* parapet */}
       {[[0, -10.2, 25, 0.5], [0, 12.2, 25, 0.5]].map(([x, z, w, d], i) => (
         <mesh key={i} position={[x, 0.4, z]} material={mat('#13293a')}><boxGeometry args={[w, 0.8, d]} /></mesh>
@@ -105,13 +103,10 @@ export function Rooftop() {
 
       {/* ---------- Greenhouse (walk-in) ---------- */}
       <group>
-        <mesh rotation-x={-Math.PI / 2} position={[7, 0.02, -5.5]} receiveShadow>
-          <planeGeometry args={[7.6, 6.6]} />
-          <meshLambertMaterial map={ghFloor} />
-        </mesh>
+        <SurfaceBlock at={[7,0.008,-5.5]} size={[7.6,0.024,6.6]} finish="concrete" tile={2.4}/>
         {[[7, -8.85, 8, 0.3], [3.15, -5.5, 0.3, 7], [10.85, -5.5, 0.3, 7], [4.5, -2.15, 3, 0.3], [9.5, -2.15, 3, 0.3]].map(([x, z, w, d], i) => (
           <group key={i}>
-            <mesh position={[x, 0.25, z]} material={mat('#fff7e8')}><boxGeometry args={[w, 0.5, d]} /></mesh>
+            <mesh position={[x, 0.25, z]} material={mat('#7c8272')}><boxGeometry args={[w, 0.5, d]} /></mesh>
             {!(inGh && i >= 3) && <mesh position={[x, 1.6, z]} material={glassMat}><boxGeometry args={[w, 2.2, d * 0.5]} /></mesh>}
           </group>
         ))}
@@ -124,18 +119,8 @@ export function Rooftop() {
           <mesh position={[-0.03, 0.025, 0.06]} rotation-z={Math.PI / 2} material={mat('#e8b35c', 0.42)}><cylinderGeometry args={[0.055, 0.055, 0.33, 8]} /></mesh>
           <mesh position={[-0.205, 0.025, 0.06]} material={mat('#e8b35c', 0.42)}><torusGeometry args={[0.07, 0.018, 5, 10]} /></mesh>
         </group>
-        {!inGh && (
-          <mesh position={[7, 3.1, -5.5]} rotation-z={Math.PI / 2} material={glassMat}>
-            <cylinderGeometry args={[0.9, 0.9, 7.9, 3, 1, false]} />
-          </mesh>
-        )}
-        <mesh position={[7, 3.3, -5.5]} material={mat('#506d58')}><boxGeometry args={[8, 0.12, 0.12]} /></mesh>
-        {/* bench + drying rack */}
+        <GrowRoom glazing={!inGh}/>
         <WorkshopBench />
-        <mesh position={[7, 2.1, -8.5]} material={mat('#13293a')}><boxGeometry args={[5.4, 0.06, 0.06]} /></mesh>
-        {[5.4, 6.4, 7.6, 8.6].map(x => (
-          <mesh key={x} position={[x, 1.75, -8.5]} material={mat('#7fa84a')}><coneGeometry args={[0.18, 0.6, 5]} /></mesh>
-        ))}
         <mesh position={[3.45, 1.3, -4.6]} rotation-y={Math.PI / 2}>
           <planeGeometry args={[1.4, 1.0]} />
           <meshStandardMaterial map={signTex('PLANNER', '#c4a869', '#13293a', 256, 128)} />

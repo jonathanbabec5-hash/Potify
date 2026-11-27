@@ -130,4 +130,4 @@ export const fx = {
   },
 };
 
-export const camCtl = { yawOffset: 0 };
+export const camCtl = { yawOffset: 0, pitch: -0.15 };
