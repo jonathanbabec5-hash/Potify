@@ -112,3 +112,163 @@ test('corrupt local saves remain intact and visibly report an error', async () =
   assert.equal(broken.game.getState().saveError, null);
   assert.equal(JSON.parse(localStorage.getItem(SAVE_KEY)).name, 'Fresh start');
 });
+
+test('legacy saves can start The Lease and carry their first sale into the story', async () => {
+  localStorage.removeItem(SAVE_KEY);
+  const { game: beforeUpdate } = await import('../store.ts?before-story');
+  beforeUpdate.start();
+  beforeUpdate.plant(0, 'sunhaze');
+  beforeUpdate.water(0);
+  for (let i = 0; i < 364; i++) beforeUpdate.tick(0.25);
+  beforeUpdate.harvest(0);
+  beforeUpdate.sellAll();
+  const original = beforeUpdate.getState();
+  assert.ok(original.quest.sold);
+  const { story: _story, ...legacy } = original;
+  localStorage.setItem(SAVE_KEY, JSON.stringify(legacy));
+  const { game: migrated } = await import('../store.ts?legacy-story');
+  assert.equal(migrated.getState().saveError, null);
+  assert.equal(migrated.getState().totalSold, original.totalSold);
+  assert.deepEqual(migrated.getState().quest, original.quest);
+  assert.deepEqual(migrated.getState().plots, original.plots);
+  assert.deepEqual(migrated.getState().story.tasks, { latch: 'available', signal: 'available', ledger: 'available' });
+
+  migrated.readStoryItem('latch');
+  assert.equal(migrated.getState().story.tasks.latch, 'found', 'an early discovery is recorded');
+  assert.equal(migrated.chooseStoryReply('moss', 'return-latch'), null, 'the lease opens the jobs');
+  migrated.readStoryItem('lease');
+  assert.ok(migrated.chooseStoryReply('mira', 'ask-moss'));
+  assert.equal(migrated.chooseStoryReply('mira', 'ask-jun'), null, 'the chosen lead stays on file');
+  assert.equal(migrated.chooseStoryReply('jun', 'return-latch'), null, 'only Moss can close this job');
+  assert.equal(migrated.chooseStoryReply('mira', 'file-lease'), null, 'a sale alone cannot close the lease');
+  const supplies = migrated.getState().supplies;
+  assert.ok(migrated.chooseStoryReply('moss', 'return-latch'));
+  migrated.readStoryItem('latch');
+  assert.equal(migrated.chooseStoryReply('moss', 'return-latch'), null);
+  assert.equal(migrated.getState().supplies, supplies + 1);
+  assert.ok(migrated.chooseStoryReply('mira', 'file-lease'));
+  assert.equal(migrated.getState().story.filed, true);
+  assert.equal(migrated.chooseStoryReply('mira', 'file-lease'), null);
+  const { game: reloaded } = await import('../store.ts?legacy-story-finished');
+  assert.deepEqual(reloaded.getState().story, migrated.getState().story);
+  assert.equal(reloaded.getState().supplies, supplies + 1);
+});
+
+test('Jun’s route requires a real in-game sale and each side job pays once', async () => {
+  localStorage.removeItem(SAVE_KEY);
+  const { game: fresh } = await import('../store.ts?jun-story');
+  fresh.start({ name: 'Night grower' });
+  fresh.readStoryItem('lease');
+  assert.ok(fresh.chooseStoryReply('mira', 'ask-jun'));
+  assert.ok(fresh.chooseStoryReply('jun', 'accept-signal'));
+  assert.equal(fresh.chooseStoryReply('jun', 'return-signal'), null);
+  fresh.readStoryItem('signal');
+  const balance = fresh.getState().money;
+  assert.ok(fresh.chooseStoryReply('jun', 'return-signal'));
+  assert.equal(fresh.chooseStoryReply('jun', 'return-signal'), null);
+  assert.equal(fresh.getState().money, balance + 3);
+
+  assert.ok(fresh.chooseStoryReply('mira', 'accept-ledger'));
+  fresh.readStoryItem('ledger');
+  assert.ok(fresh.chooseStoryReply('mira', 'return-ledger'));
+  fresh.readStoryItem('ledger');
+  assert.equal(fresh.chooseStoryReply('mira', 'return-ledger'), null);
+  assert.equal(fresh.getState().seeds.moonmint, 1);
+  assert.equal(fresh.chooseStoryReply('mira', 'file-lease'), null);
+
+  fresh.plant(0, 'sunhaze');
+  fresh.water(0);
+  for (let i = 0; i < 364; i++) fresh.tick(0.25);
+  fresh.harvest(0);
+  fresh.sellAll();
+  assert.ok(fresh.chooseStoryReply('mira', 'file-lease'));
+  const { game: reloaded } = await import('../store.ts?jun-story-finished');
+  assert.equal(reloaded.getState().story.lead, 'jun');
+  assert.equal(reloaded.getState().story.filed, true);
+  assert.equal(reloaded.getState().story.tasks.latch, 'available', 'the other route remains optional');
+  assert.equal(reloaded.getState().seeds.moonmint, 1);
+  assert.equal(reloaded.chooseStoryReply('jun', 'return-signal'), null, 'reload cannot pay a reward twice');
+});
+
+test('invalid story data is preserved for recovery', async () => {
+  const invalid = JSON.parse(localStorage.getItem(SAVE_KEY));
+  invalid.story.tasks.signal = 'rewarded';
+  const raw = JSON.stringify(invalid);
+  localStorage.setItem(SAVE_KEY, raw);
+  const { game: broken } = await import('../store.ts?corrupt-story');
+  assert.ok(broken.getState().saveError);
+  broken.readStoryItem('lease');
+  assert.equal(broken.chooseStoryReply('mira', 'ask-jun'), null);
+  broken.save();
+  assert.equal(localStorage.getItem(SAVE_KEY), raw);
+});
+
+test('first receipt builds either roof project, freight survives reload, and a warehouse run pays once per day', async () => {
+  localStorage.removeItem(SAVE_KEY);
+  const { game: g, WAREHOUSE } = await import('../store.ts?canal-projects');
+  g.start();
+  assert.equal(g.getState().position.zone, 'apartment');
+  g.buildProject('glasshouse');
+  assert.equal(g.getState().plots.length, 6);
+  const harvestBeds = count => {
+    for (let i = 0; i < count; i++) {
+      if (!g.getState().seeds.sunhaze) g.buySeed('sunhaze');
+      g.plant(i, 'sunhaze'); g.water(i);
+    }
+    for (let i = 0; i < 364; i++) g.tick(0.25);
+    for (let i = 0; i < count; i++) g.harvest(i);
+  };
+  harvestBeds(1);
+  const sale = harvestValue(g.getState().harvest[0]);
+  g.sellAll();
+  assert.ok(sale >= 4);
+  const before = g.getState().money;
+  const legacy = JSON.parse(localStorage.getItem(SAVE_KEY));
+  for (const key of ['projects', 'warehouse', 'crate', 'deliveries']) delete legacy[key];
+  localStorage.setItem(SAVE_KEY, JSON.stringify(legacy));
+  const { game: greenhouse } = await import('../store.ts?legacy-works');
+  greenhouse.buildProject('glasshouse');
+  greenhouse.buildProject('glasshouse');
+  greenhouse.buildProject('cart');
+  assert.equal(greenhouse.getState().money, before - 4);
+  assert.equal(greenhouse.getState().plots.length, 8);
+  greenhouse.plant(7, 'sunhaze');
+  greenhouse.water(7);
+  const { game: annex } = await import('../store.ts?annex');
+  assert.equal(annex.getState().plots[7].water, 100);
+  assert.equal(annex.getState().saveError, null);
+
+  g.buildProject('cart');
+  assert.equal(g.getState().money, before - 4);
+  harvestBeds(2);
+  const batch = g.getState().harvest[0];
+  g.packCrate();
+  g.packCrate();
+  g.sellAll();
+  const { game: courier } = await import('../store.ts?cart-loaded');
+  const till = courier.getState().money;
+  courier.deliverCrate('lab');
+  assert.deepEqual(courier.getState().crate, batch);
+  courier.deliverCrate('cafe'); courier.deliverCrate('cafe');
+  assert.equal(courier.getState().deliveries, 1);
+  assert.equal(courier.getState().money, Math.round((till + harvestValue(batch) + 5) * 100) / 100);
+
+  g.leaseWarehouse();
+  assert.equal(g.getState().warehouse.leased, false);
+  for (let run = 0; run < 3; run++) { harvestBeds(6); g.sellAll(); }
+  const balance = g.getState().money;
+  g.leaseWarehouse(); g.leaseWarehouse();
+  assert.equal(g.getState().money, balance - WAREHOUSE.price);
+  harvestBeds(4);
+  const freight = g.getState().harvest;
+  const earnings = harvestValue(freight[0]) + harvestValue(freight[1]) + WAREHOUSE.dispatchFee;
+  const wallet = g.getState().money;
+  g.dispatchFreight(); g.dispatchFreight();
+  assert.deepEqual(g.getState().harvest, freight.slice(2));
+  assert.equal(g.getState().money, Math.round((wallet + earnings) * 100) / 100);
+  const { game: tenant } = await import('../store.ts?ward-reloaded');
+  tenant.dispatchFreight();
+  assert.deepEqual(tenant.getState().harvest, freight.slice(2));
+  tenant.sleep(); tenant.dispatchFreight();
+  assert.equal(tenant.getState().harvest.length, 0);
+});

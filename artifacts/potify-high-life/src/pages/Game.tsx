@@ -13,8 +13,10 @@ function useHotkeys() {
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       unlockAudio();
-      const tag = (e.target as HTMLElement)?.tagName;
+      const target = e.target instanceof Element ? e.target : null;
+      const tag = target?.tagName;
       if (tag === 'INPUT' || tag === 'TEXTAREA') return;
+      if ((e.code === 'Enter' || e.code === 'Space') && target?.closest('button, a[href]')) return;
       const u = ui.get();
       if (!u.inGame) return;
       if (e.code === 'Escape' || e.code === 'KeyP') { if (u.modal) closeModal(); else openModal({ type: 'pause' }); return; }
@@ -51,19 +53,19 @@ function Loader() {
   useEffect(() => { if (ready) { const t = setTimeout(() => setGone(true), 700); return () => clearTimeout(t); } return undefined; }, [ready]);
   if (gone) return null;
   return (
-    <div className={`fixed inset-0 z-[60] bg-[#f4a07c] flex flex-col items-center justify-center transition-opacity duration-700 ${ready ? 'opacity-0' : 'opacity-100'}`}>
-      <p className="logo-type text-7xl md:text-8xl -rotate-2">POTIFY</p>
+    <div className={`fixed inset-0 z-[60] bg-[#293b33] flex flex-col items-center justify-center transition-opacity duration-700 ${ready ? 'opacity-0' : 'opacity-100'}`}>
+      <p className="city-wordmark">POTIFY</p>
       <div className="flex gap-1.5 mt-8 h-8 items-end">
         {[0, 1, 2, 3, 4].map(i => <span key={i} className="w-3 h-full bg-jade border-2 border-ink rounded-md origin-bottom" style={{ animation: `bars ${0.7 + i * 0.1}s ease-in-out infinite` }} />)}
       </div>
-      <p className="font-black text-ink mt-4 uppercase tracking-[0.25em] text-xs">Watering the rooftop</p>
+      <p className="font-black text-cream mt-4 uppercase tracking-[0.25em] text-xs">Opening Roof 7B</p>
     </div>
   );
 }
 
 function Recovery({ title, body, onRetry }: { title: string; body: string; onRetry?: () => void }) {
   return (
-    <div className="fixed inset-0 z-[70] bg-[#f4a07c] flex items-center justify-center p-5">
+    <div className="fixed inset-0 z-[70] bg-[#293b33] flex items-center justify-center p-5">
       <div className="panel p-6 max-w-md text-center pop">
         <p className="logo-type text-5xl">POTIFY</p>
         <h1 className="font-display text-2xl mt-4">{title}</h1>

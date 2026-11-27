@@ -2,43 +2,64 @@ import type { Area, Interactable, NpcId, ZoneName } from '@/game/runtime';
 
 export type AABB = [number, number, number, number]; // minX, maxX, minZ, maxZ
 export const TX = 80; // town origin x
+export const PLAYER_HAIR = '#49372e';
 
-export const BEDS = Array.from({ length: 6 }, (_, i) => ({ index: i, x: [-4, 0, 4][i % 3], z: i < 3 ? 6.6 : 9.8 }));
+const outdoorBeds = Array.from({ length: 6 }, (_, i) => ({ index: i, x: [-4, 0, 4][i % 3], z: i < 3 ? 6.6 : 9.8 }));
+
+export const BEDS = [...outdoorBeds, { index: 6, x: 0, z: -6.9 }, { index: 7, x: 0, z: -3.7 }];
+export const CART = { x: 9.9, z: 6.35 };
+export const STORY_POSITIONS = {
+  lease: [-8.6, -4.65],
+  latch: [8.1, -2.04],
+  signal: [-4.85, -6.35],
+  ledger: [94.6, -6.8],
+} as const;
 
 export const ROOF_BOUNDS = { minX: -11.6, maxX: 11.6, minZ: -9.6, maxZ: 11.6 };
-export const TOWN_BOUNDS = { minX: 62.5, maxX: 97.5, minZ: -15.5, maxZ: 13.9 };
+export const TOWN_BOUNDS = { minX: 62.5, maxX: 115.5, minZ: -15.5, maxZ: 13.9 };
 
 export const ROOF_COLLIDERS: AABB[] = [
   // apartment walls (door gap x -8..-6 on south)
   [-11, -3, -9, -8.7], [-11, -10.7, -9, -2], [-3.3, -3, -9, -2], [-11, -8, -2.3, -2], [-6, -3, -2.3, -2],
   [-10.7, -8.3, -8.7, -6.9], [-4.4, -3.3, -8.7, -7.9], [-6.6, -5.4, -8.7, -8.1],
+  [-9.08, -8.12, -5.02, -4.28], [-5.17, -4.53, -6.64, -6.06], // lease table and log stool
   // greenhouse walls (door gap x 6..8)
   [3, 11, -9, -8.7], [3, 3.3, -9, -2], [10.7, 11, -9, -2], [3, 6, -2.3, -2], [8, 11, -2.3, -2],
   [4, 10, -8.7, -7.9],
-  ...BEDS.map(b => [b.x - 1.3, b.x + 1.3, b.z - 0.8, b.z + 0.8] as AABB),
+  ...outdoorBeds.map(b => [b.x - 1.3, b.x + 1.3, b.z - 0.8, b.z + 0.8] as AABB),
   [8.6, 11.8, 8.2, 11.8], // stair hut
   [-11.8, -9.4, 3, 5.4], // water tank
   [-10.6, -7.4, 9.2, 10.4], // bench
 ];
 
+const annexColliders: AABB[] = BEDS.slice(6).map(b => [b.x - 1.3, b.x + 1.3, b.z - 0.8, b.z + 0.8]);
+const cartCollider: AABB = [CART.x - 0.7, CART.x + 0.7, CART.z - 0.55, CART.z + 0.55];
+export function roofColliders(glasshouse: boolean, cart: boolean) {
+  return [...ROOF_COLLIDERS, ...(glasshouse ? annexColliders : []), ...(cart ? [cartCollider] : [])];
+}
 export const SHOPS = {
-  seed: { name: 'Seed & Signal', x: 68, z: -11, w: 8, d: 6, door: [68, -7.3] as const, color: '#1f9e89', roof: '#fbd255' },
-  rootworks: { name: 'Rootworks', x: 80, z: -12, w: 8, d: 6, door: [80, -8.3] as const, color: '#ef6f7c', roof: '#13293a' },
-  exchange: { name: 'Green Exchange', x: 92, z: -11, w: 8, d: 6, door: [92, -7.3] as const, color: '#fbd255', roof: '#f2703f' },
-  lab: { name: 'Petri & Pistil Lab', x: 66, z: 6, w: 6, d: 8, door: [69.7, 6] as const, color: '#8fd6e2', roof: '#fff7e8' },
-  cafe: { name: 'Low Tide Listening Cafe', x: 94, z: 6, w: 6, d: 8, door: [90.3, 6] as const, color: '#f2703f', roof: '#1f9e89' },
+  seed: { name: 'Seed & Signal', x: 68, z: -11, w: 8, d: 6, door: [68, -7.3] as const, color: '#506d58', roof: '#c4a869' },
+  rootworks: { name: 'Rootworks', x: 80, z: -12, w: 8, d: 6, door: [80, -8.3] as const, color: '#886951', roof: '#13293a' },
+  exchange: { name: 'Green Exchange', x: 92, z: -11, w: 8, d: 6, door: [92, -7.3] as const, color: '#c4a869', roof: '#986344' },
+  lab: { name: 'Petri & Pistil Lab', x: 66, z: 6, w: 6, d: 8, door: [69.7, 6] as const, color: '#90a7a1', roof: '#fff7e8' },
+  cafe: { name: 'Low Tide Listening Cafe', x: 94, z: 6, w: 6, d: 8, door: [90.3, 6] as const, color: '#986344', roof: '#506d58' },
 };
 
 const box = (x: number, z: number, w: number, d: number): AABB => [x - w / 2, x + w / 2, z - d / 2, z + d / 2];
 export const TOWN_TREES: [number, number][] = [[71, -1], [89, -1], [72, 12], [88, 12], [64, -3], [96, -3]];
 export const TOWN_COLLIDERS: AABB[] = [
+  [101.85, 102.15, -11.2, -2], [113.85, 114.15, -11.2, -2], [102, 114, -11.2, -10.9],
+  [102, 106, -2.15, -1.85], [110, 114, -2.15, -1.85], [104, 112, -10.3, -8.9],
   ...Object.values(SHOPS).map(s => box(s.x, s.z, s.w, s.d)),
   [76, 84, 15, 19], // home building
   [78, 82, -2, 2], // fountain
   [83.6, 84.4, -4.2, -3.6], // board
+  [93.8, 95.4, -7.2, -6.4], // tagged crate
   ...TOWN_TREES.map(([x, z]) => box(x, z, 1, 1)),
   [74.5, 76.5, 4.3, 5.1], [83.5, 85.5, 4.3, 5.1], // benches
 ];
+
+export const CLOSED_WARD_COLLIDERS: AABB[] = [...TOWN_COLLIDERS, [106, 110, -2.15, -1.85]];
 
 export function zoneAt(area: Area, x: number, z: number): ZoneName {
   if (area === 'town') return 'town';
@@ -49,10 +70,17 @@ export function zoneAt(area: Area, x: number, z: number): ZoneName {
 
 export const STATIC_TARGETS: Interactable[] = [
   ...BEDS.map(b => ({ id: `bed-${b.index}`, kind: 'bed' as const, x: b.x, z: b.z, r: 2.0, label: `Bed ${b.index + 1}`, verb: 'Tend', area: 'roof' as Area, index: b.index })),
+  { id: 'warehouse-lease', kind: 'warehouse-lease', x: 110.9, z: -1.25, r: 1.8, label: 'Warehouse lease', verb: 'Read', area: 'town' },
+  { id: 'freight', kind: 'freight', x: 108, z: -8.65, r: 1.9, label: 'Freight bench', verb: 'Dispatch', area: 'town' },
+  { id: 'cart', kind: 'cart', ...CART, r: 2, label: 'Delivery cart', verb: 'Pack', area: 'roof' },
   { id: 'stairs', kind: 'door-down', x: 8.0, z: 9.9, r: 1.7, label: 'Stairwell to town', verb: 'Go down', area: 'roof' },
   { id: 'sleep', kind: 'sleep', x: -9.5, z: -6.2, r: 1.5, label: 'Your bed', verb: 'Sleep', area: 'roof' },
   { id: 'wardrobe', kind: 'wardrobe', x: -3.9, z: -7.2, r: 1.4, label: 'Wardrobe', verb: 'Change', area: 'roof' },
   { id: 'radio', kind: 'radio', x: -6, z: -7.4, r: 1.4, label: 'Rooftop radio', verb: 'Toggle', area: 'roof' },
+  { id: 'lease', kind: 'story-item', storyItem: 'lease', x: STORY_POSITIONS.lease[0], z: STORY_POSITIONS.lease[1], r: 1.4, label: 'Lease for Roof 7B', verb: 'Read', area: 'roof' },
+  { id: 'latch', kind: 'story-item', storyItem: 'latch', x: STORY_POSITIONS.latch[0], z: STORY_POSITIONS.latch[1] + 0.45, r: 1.25, label: 'Brass latch', verb: 'Inspect', area: 'roof' },
+  { id: 'signal', kind: 'story-item', storyItem: 'signal', x: STORY_POSITIONS.signal[0], z: STORY_POSITIONS.signal[1], r: 1.3, label: 'Broadcast log', verb: 'Read', area: 'roof' },
+  { id: 'ledger', kind: 'story-item', storyItem: 'ledger', x: STORY_POSITIONS.ledger[0], z: STORY_POSITIONS.ledger[1], r: 1.4, label: 'Delivery tag', verb: 'Read', area: 'town' },
   { id: 'rack', kind: 'rack', x: 7, z: -7.1, r: 1.8, label: 'Drying rack', verb: 'Check', area: 'roof' },
   { id: 'planner', kind: 'planner', x: 4.1, z: -4.6, r: 1.4, label: 'Grow planner', verb: 'Read', area: 'roof' },
   { id: 'home', kind: 'door-up', x: 80, z: 14.2, r: 1.9, label: 'Your building', verb: 'Climb up', area: 'town' },
@@ -63,9 +91,9 @@ export const STATIC_TARGETS: Interactable[] = [
 ];
 
 export const NPCS: Record<NpcId, { name: string; role: string; color: string; shirt: string; skin: string; hair: string }> = {
-  mira: { name: 'Mira', role: 'Keeper of Seed & Signal', color: '#1f9e89', shirt: '#1f9e89', skin: '#c98b5e', hair: '#2b2140' },
-  moss: { name: 'Moss', role: 'Soil mixer at Rootworks', color: '#7a8f3a', shirt: '#7a8f3a', skin: '#f0c9a4', hair: '#b4682e' },
-  jun: { name: 'Jun', role: 'Barista and radio host, Low Tide', color: '#ef6f7c', shirt: '#ef6f7c', skin: '#e8b48e', hair: '#1a1a24' },
+  mira: { name: 'Mira', role: 'Keeper of Seed & Signal', color: '#8c6a97', shirt: '#74607e', skin: '#c98b5e', hair: '#684663' },
+  moss: { name: 'Moss', role: 'Soil mixer at Rootworks', color: '#809457', shirt: '#59644b', skin: '#f0c9a4', hair: '#c3b2a1' },
+  jun: { name: 'Jun', role: 'Barista and radio host, Low Tide', color: '#c98d5e', shirt: '#a56450', skin: '#e8b48e', hair: '#32303c' },
 };
 
 export function npcSchedule(id: NpcId, minute: number, day: number, met: boolean): { area: Area; x: number; z: number; place: string } {

@@ -1,4 +1,5 @@
 import { useSyncExternalStore } from 'react';
+import { chooseStory, freshStory, readStory, validateStory, type ChoiceId, type Resident, type StoryItem, type StoryProgress } from './story.ts';
 
 export type Zone = 'rooftop' | 'town' | 'greenhouse' | 'apartment';
 export interface Plot {
@@ -15,6 +16,23 @@ export interface Harvest {
   units: number;
   quality: number;
 }
+export type RoofProject = 'glasshouse' | 'cart';
+export const PROJECTS = {
+  glasshouse: { name: 'Glasshouse extension', detail: 'Moss can glaze the strip beside the old greenhouse. Two new beds will fit under the glass.' },
+  cart: { name: 'Neighborhood delivery cart', detail: 'Pack a harvest by the roof stairs and bring it to a neighbor for the market price plus 5 simSOL.' },
+} as const;
+export const WAREHOUSE = { price: 90, minimumUnits: 250, dispatchFee: 12 };
+export const DELIVERY_STOPS = [
+  { shop: 'cafe', name: 'Low Tide Listening Cafe', note: 'Jun has cleared the shelf beside the record player.' },
+  { shop: 'lab', name: 'Petri & Pistil Lab', note: 'The lab has a clean tray waiting for a whole local batch.' },
+] as const;
+
+export function projectPrice(installed: number) {
+  return installed === 0 ? 4 : 80;
+}
+
+const emptyPlot = (id: number): Plot => ({ id, strain: null, growth: 0, water: 0, health: 50, fed: false });
+
 export interface Settings {
   muted: boolean;
   music: boolean;
@@ -49,6 +67,11 @@ export interface GameState {
     upgraded: boolean;
     rewarded: boolean;
   };
+  projects: RoofProject[];
+  crate: Harvest | null;
+  deliveries: number;
+  warehouse: { leased: boolean; lastDispatchDay: number };
+  story: StoryProgress;
   position: { x: number; z: number; zone: Zone };
   settings: Settings;
   savedAt: number;
@@ -85,11 +108,12 @@ function freshState(): GameState {
     day: 1, minute: 480, elapsed: 0, money: ECONOMY.startingMoney,
     seeds: { sunhaze: 2, moonmint: 0, amber: 0 }, supplies: 1,
     harvest: [],
-    plots: Array.from({ length: 6 }, (_, id) => ({ id, strain: null, growth: 0, water: 0, health: 50, fed: false })),
+    plots: Array.from({ length: 6 }, (_, id) => emptyPlot(id)),
     upgrades: [], friendship: { mira: 0, moss: 0, jun: 0 },
     lastTalkDay: {},
     quest: { met: false, bought: false, planted: false, watered: false, harvested: false, sold: false, upgraded: false, rewarded: false },
-    position: { x: 0, z: 4, zone: 'rooftop' },
+    projects: [], crate: null, deliveries: 0, warehouse: { leased: false, lastDispatchDay: 0 }, story: freshStory(),
+    position: { x: -7.4, z: -4.6, zone: 'apartment' },
     settings: { muted: false, music: true, camera: 1, quality: 'high' },
     savedAt: 0, saveError: null, totalSold: 0,
   };
@@ -101,8 +125,15 @@ const object = (v: unknown): v is Record<string, unknown> => !!v && typeof v ===
 const validColor = (v: unknown): v is string => typeof v === 'string' && /^#[0-9a-f]{6}$/i.test(v);
 const seedExists = (id: string) => SEEDS.some(s => s.id === id);
 
-/** Reject corrupt/incompatible saves instead of silently destroying them. */
-export function validateSave(value: unknown): value is GameState {
+type Additions = 'story' | 'projects' | 'crate' | 'deliveries' | 'warehouse';
+type SavedGame = Omit<GameState, Additions> & Partial<Pick<GameState, Additions>>;
+function validBatch(h: unknown): h is Harvest {
+  return object(h) && typeof h.id === 'string' && typeof h.strain === 'string' && seedExists(h.strain) &&
+    finite(h.units, 1) && finite(h.quality, 1, 3) && Number.isInteger(h.quality);
+}
+
+/** Accept earlier v1 saves and reject corrupt saves before writing anything. */
+export function validateSave(value: unknown): value is SavedGame {
   if (!object(value) || value.version !== 1) return false;
   const s = value;
   if (typeof s.started !== 'boolean' || typeof s.acknowledged !== 'boolean' ||
@@ -111,12 +142,21 @@ export function validateSave(value: unknown): value is GameState {
       !finite(s.money) || !finite(s.elapsed) || !finite(s.supplies) ||
       !finite(s.savedAt) || !finite(s.totalSold)) return false;
   if (!object(s.seeds) || SEEDS.some(seed => !finite((s.seeds as Record<string, unknown>)[seed.id]))) return false;
-  if (!Array.isArray(s.plots) || s.plots.length !== 6 || !s.plots.every((p, i) =>
+  const projects = s.projects === undefined ? [] : s.projects;
+  if (!Array.isArray(projects) || projects.some(p => p !== 'glasshouse' && p !== 'cart') ||
+      new Set(projects).size !== projects.length) return false;
+  if (s.deliveries !== undefined && !(finite(s.deliveries) && Number.isInteger(s.deliveries))) return false;
+  if (s.warehouse !== undefined) {
+    const w = s.warehouse;
+    if (!object(w) || typeof w.leased !== 'boolean' || !finite(w.lastDispatchDay, 0, s.day) ||
+        !Number.isInteger(w.lastDispatchDay) || (!w.leased && w.lastDispatchDay !== 0) ||
+        (w.leased && projects.length === 0)) return false;
+  }
+  if (s.crate != null && !(projects.includes('cart') && validBatch(s.crate))) return false;
+  if (!Array.isArray(s.plots) || s.plots.length !== (projects.includes('glasshouse') ? 8 : 6) || !s.plots.every((p, i) =>
     object(p) && p.id === i && (p.strain === null || (typeof p.strain === 'string' && seedExists(p.strain))) &&
     finite(p.growth, 0, 100) && finite(p.water, 0, 100) && finite(p.health, 0, 100) && typeof p.fed === 'boolean')) return false;
-  if (!Array.isArray(s.harvest) || !s.harvest.every(h => object(h) &&
-      typeof h.id === 'string' && typeof h.strain === 'string' && seedExists(h.strain) &&
-      finite(h.units, 1) && finite(h.quality, 1, 3) && Number.isInteger(h.quality))) return false;
+  if (!Array.isArray(s.harvest) || !s.harvest.every(validBatch)) return false;
   if (!Array.isArray(s.upgrades) || !s.upgrades.every(id => typeof id === 'string' && UPGRADES.some(u => u.id === id))) return false;
   if (!object(s.position) || !finite(s.position.x, -1000, 1000) || !finite(s.position.z, -1000, 1000) ||
       !['rooftop', 'town', 'greenhouse', 'apartment'].includes(s.position.zone as string)) return false;
@@ -125,7 +165,7 @@ export function validateSave(value: unknown): value is GameState {
   if (!object(s.friendship) || !Object.values(s.friendship).every(v => finite(v, 0, 100)) ||
       !object(s.lastTalkDay) || !Object.values(s.lastTalkDay).every(v => finite(v, 1))) return false;
   if (!object(s.quest) || Object.keys(freshState().quest).some(k => typeof (s.quest as Record<string, unknown>)[k] !== 'boolean')) return false;
-  return true;
+  return s.story === undefined || validateStory(s.story, s.quest.sold === true);
 }
 
 function load(): GameState {
@@ -136,7 +176,7 @@ function load(): GameState {
     if (!raw) return initial;
     const parsed: unknown = JSON.parse(raw);
     if (!validateSave(parsed)) return { ...initial, saveError: 'Your saved game could not be read. It has not been overwritten. Reset from settings to start fresh.' };
-    return { ...parsed, saveError: null };
+    return { ...parsed, warehouse: parsed.warehouse ?? initial.warehouse, projects: parsed.projects ?? [], deliveries: parsed.deliveries ?? 0, crate: parsed.crate ?? null, story: parsed.story ?? initial.story, saveError: null };
   } catch {
     return { ...initial, saveError: 'Local save storage is unavailable or unreadable. Progress cannot be saved until browser storage is available.' };
   }
@@ -189,11 +229,14 @@ export function objective(s: GameState) {
     { key: 'watered', title: 'A little care goes far', description: 'Water a planted bed. Add soil nourishment for a healthier, higher-quality crop.' },
     { key: 'harvested', title: 'Your first rooftop harvest', description: 'Keep a plant hydrated until fully grown (about 90 seconds for Sunhaze), then harvest.' },
     { key: 'sold', title: 'Meet the neighborhood market', description: 'Walk to Green Exchange in town and sell your fictional harvest for virtual simSOL.' },
+    { key: 'project', title: 'What will you build?', description: 'Commission the glasshouse extension or delivery cart at Green Exchange for 4 simSOL.' },
     { key: 'upgraded', title: 'Make this roof your own', description: 'Visit Rootworks and purchase a useful equipment upgrade. Keep growing if you need more simSOL.' },
   ] as const;
-  const index = steps.findIndex(step => !s.quest[step.key]);
-  if (index === -1) return { title: 'A wonderful new beginning', description: 'Tutorial complete! Grow different cultivars, befriend neighbors, and collect all three upgrades.', step: 7, total: 7 };
-  return { ...steps[index], step: index, total: 7 };
+  const index = steps.findIndex(step => step.key === 'project' ? s.projects.length === 0 : !s.quest[step.key]);
+  if (index === -1) return s.warehouse.leased
+    ? { title: 'The morning freight', description: 'The warehouse takes two batches per daily freight run. Your rooftop beds and neighborhood deliveries stay open.', step: steps.length, total: steps.length }
+    : { title: 'A place on the canal', description: 'Find the brick warehouse east of Green Exchange. One roof project, 250 traded units and 90 simSOL qualify you for the lease.', step: steps.length, total: steps.length };
+  return { ...steps[index], step: index, total: steps.length };
 }
 
 function advancePlants(seconds: number) {
@@ -300,6 +343,53 @@ export const game = {
     commit({ ...state, harvest: [], money: cents(state.money + value), totalSold: state.totalSold + units, quest: questWith('sold') });
     return `Sold ${units} fictional harvest units for ${value.toFixed(2)} virtual simSOL. No real money or tokens exchanged.`;
   },
+  buildProject(id: RoofProject): string {
+    if (!Object.hasOwn(PROJECTS, id)) return 'Unknown roof project.';
+    if (!state.quest.sold) return 'Sell your first rooftop harvest at Green Exchange.';
+    if (state.projects.includes(id)) return 'Already built on your roof.';
+    const cost = projectPrice(state.projects.length);
+    if (state.money < cost) return `You need ${cost} simSOL for this job.`;
+    const plots = id === 'glasshouse' ? [...state.plots, emptyPlot(6), emptyPlot(7)] : state.plots;
+    commit({ ...state, plots, money: cents(state.money - cost), projects: [...state.projects, id] });
+    return `${PROJECTS[id].name} is ready on Roof 7B.`;
+  },
+  leaseWarehouse(): string {
+    if (state.warehouse.leased) return 'Warehouse already leased.';
+    if (!state.projects.length || state.totalSold < WAREHOUSE.minimumUnits || state.money < WAREHOUSE.price) {
+      return 'You need one roof project, 250 traded units and 90 simSOL for the lease.';
+    }
+    commit({ ...state, money: cents(state.money - WAREHOUSE.price), warehouse: { leased: true, lastDispatchDay: 0 } });
+    return 'The shutter is open. Your packing bench is inside.';
+  },
+  dispatchFreight(): string {
+    if (!state.warehouse.leased) return 'Lease the warehouse first.';
+    if (state.warehouse.lastDispatchDay === state.day) return 'The freight run already left today.';
+    if (state.harvest.length < 2) return 'You need two harvested batches for the freight run.';
+    const [one, two, ...remaining] = state.harvest;
+    const payout = cents(harvestValue(one) + harvestValue(two) + WAREHOUSE.dispatchFee);
+    commit({ ...state, harvest: remaining, money: cents(state.money + payout),
+      totalSold: state.totalSold + one.units + two.units,
+      warehouse: { leased: true, lastDispatchDay: state.day } });
+    return `Two loads dispatched. Earned ${payout.toFixed(2)} simSOL.`;
+  },
+  packCrate(): string {
+    if (!state.projects.includes('cart')) return 'Build the delivery cart first.';
+    if (state.crate) return 'A crate is already packed.';
+    const [batch, ...harvest] = state.harvest;
+    if (!batch) return 'Your harvest bag is empty.';
+    commit({ ...state, harvest, crate: batch });
+    return `Crate packed for ${DELIVERY_STOPS[state.deliveries % DELIVERY_STOPS.length].name}.`;
+  },
+  deliverCrate(shop: string): string {
+    const batch = state.crate;
+    if (!batch) return 'Pack a harvest at the rooftop cart first.';
+    const stop = DELIVERY_STOPS[state.deliveries % DELIVERY_STOPS.length];
+    if (stop.shop !== shop) return `This crate belongs at ${stop.name}.`;
+    const payment = cents(harvestValue(batch) + 5);
+    commit({ ...state, crate: null, deliveries: state.deliveries + 1,
+      totalSold: state.totalSold + batch.units, money: cents(state.money + payment) });
+    return `Delivery signed for. Earned ${payment.toFixed(2)} simSOL.`;
+  },
   buyUpgrade(id: string): string {
     const upgrade = UPGRADES.find(u => u.id === id);
     if (!upgrade) return 'Choose a valid upgrade.';
@@ -322,6 +412,24 @@ export const game = {
     commit({ ...state, friendship: { ...state.friendship, [id]: clamp(friendship + (already ? 0 : 10)) },
       lastTalkDay: { ...state.lastTalkDay, [id]: state.day }, quest: id === 'mira' ? questWith('met') : state.quest });
     return `${line}${already ? ' Come say hello again tomorrow.' : ' (+10 friendship)'}`;
+  },
+  readStoryItem(item: StoryItem): void {
+    if (saveLocked) return;
+    const story = readStory(state.story, item);
+    if (story !== state.story) commit({ ...state, story });
+  },
+  chooseStoryReply(resident: Resident, id: ChoiceId) {
+    if (saveLocked) return null;
+    const change = chooseStory(state.story, resident, id, state.quest.sold);
+    if (!change) return null;
+    const next = { ...state, story: change.story };
+    switch (change.reward) {
+      case 'latch': next.supplies += 1; break;
+      case 'signal': next.money = cents(next.money + 3); break;
+      case 'ledger': next.seeds = { ...next.seeds, moonmint: next.seeds.moonmint + 1 }; break;
+    }
+    commit(next);
+    return { message: change.message, reply: change.reply };
   },
   sleep(): string {
     const plants = advancePlants(60);

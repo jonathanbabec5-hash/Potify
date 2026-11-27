@@ -2,7 +2,19 @@
 
 [Complete repository directory tree](docs/DIRECTORY.md) · [Whitepaper](docs/WHITEPAPER.md) · [Marketing and sales plan](docs/MARKETING.md) · [Build log](docs/BUILD-LOG.md)
 
-Grow a crop on the rooftop, get to know the neighborhood and return to a saved game in the same browser. The main branch contains the baseline life sim. The later Roof 7B lease story and developer notes are available on the [public story review branch](https://github.com/jonathanbabec5-hash/Potify/tree/codex/public-developer-guide). The game uses fictional money.
+This redesign brings the Roof 7B story together with the [first-harvest campaign](docs/marketing/2026-11-08-original-campaign.md). Start in the apartment, read the lease, meet the neighbors and carry your first crop downstairs to Green Exchange. Everything runs on fictional simSOL and browser saves.
+
+## From Roof 7B to the canal
+
+| Place | What you can do |
+| --- | --- |
+| Home 7B | Read the lease and follow Moss or Jun through the existing caretaker story. |
+| Green Exchange | Sell a first harvest and commission either roof project for 4 simSOL. The second costs 80. |
+| Glasshouse extension | Plant and tend two additional beds under an open-sided glass canopy. |
+| Rooftop delivery cart | Pack a harvested batch beside the stairs. Carry it downstairs to the café or lab. Each signed delivery pays the market value plus 5 simSOL. |
+| Old Industrial Ward | Walk east of the exchange. With a roof project, 250 traded units and 90 simSOL, lease the canal warehouse. The shutter opens onto a freight bench that takes two batches each day for their combined value plus 12 simSOL. |
+
+The opening illustration comes from the original campaign. The canal, bridges, skyline, warehouse and rooftop additions are rendered in the game world. The larger multi-property city, changing seasons and long-term resident arcs remain development goals in the [public design bible](docs/canon/originals/POTIFY_Master_Key_PUBLIC.txt).
 
 ## Original development and marketing archive
 

@@ -1,7 +1,8 @@
 import { useState } from 'react';
-import { Droplets, Heart, Leaf, Lock, Moon, Package, Save, Scissors, Sparkles, Sprout } from 'lucide-react';
-import { ECONOMY, SEEDS, UPGRADES, game, harvestValue, objective, formatTime } from '@/game/store';
-import { act, closeModal, fx, openModal, player, ui, useG, useUI, type NpcId, type ShopId } from '@/game/runtime';
+import { BookOpen, Droplets, Heart, Leaf, Lock, Moon, Package, Save, Scissors, Sparkles, Sprout } from 'lucide-react';
+import { WAREHOUSE, DELIVERY_STOPS, PROJECTS, projectPrice, type RoofProject, ECONOMY, SEEDS, UPGRADES, game, harvestValue, objective, formatTime } from '@/game/store';
+import { act, closeModal, fx, openModal, player, toast, ui, useG, useUI, type NpcId, type ShopId } from '@/game/runtime';
+import { FILED_NOTES, SIDE_TASKS, STORY_PAGES, storyChoices, storyLine, storyObjective, type SideTask, type StoryPage } from '@/game/story';
 import { BEDS, NPCS, SHOPS, npcSchedule } from '@/game/world';
 import { doSleep } from '@/game/interact';
 import { sfx } from '@/game/audio';
@@ -15,9 +16,13 @@ export function Modals() {
   const modal = useUI(s => s.modal);
   if (!modal) return null;
   switch (modal.type) {
+    case 'warehouse-lease': case 'freight': return <WarehouseOffice bench={modal.type === 'freight'} />;
+    case 'cart': return <Sheet title="Delivery cart" kicker="Roof 7B freight" accent="bg-jade" test="modal-cart"><Freight /></Sheet>;
     case 'bed': return <BedPanel index={modal.index} />;
     case 'shop': return <ShopPanel shop={modal.shop} />;
     case 'talk': return <Talk npc={modal.npc} line={modal.line} />;
+    case 'field-notes': return <FieldNotes />;
+    case 'story-page': return <StoryPagePanel page={modal.page} fromNotes={modal.fromNotes} />;
     case 'inventory': return <Inventory />;
     case 'map': return <MapPanel />;
     case 'calendar': return <Calendar />;
@@ -114,6 +119,7 @@ function ShopPanel({ shop }: { shop: ShopId }) {
       {shop === 'exchange' && <Exchange />}
       {shop === 'lab' && <Lab />}
       {shop === 'cafe' && <Cafe />}
+      {(shop === 'cafe' || shop === 'lab') && <Freight shop={shop} />}
     </Sheet>
   );
 }
@@ -190,6 +196,67 @@ function Rootworks() {
   );
 }
 
+function RoofWorks() {
+  const sold = useG(s => s.quest.sold);
+  const projects = useG(s => s.projects);
+  const balance = useG(s => s.money);
+  const cost = projectPrice(projects.length);
+  return <section className="mt-5 border-t border-ink/30 pt-4">
+    <h3 className="font-display text-xl">Roof 7B works ledger</h3>
+    <p className="text-sm my-2">{projects.length === 0
+      ? 'Your first market receipt qualifies one building job for the 4 simSOL neighborhood rate. The other job costs 80.'
+      : projects.length === 1 ? 'The crew can take a second job for 80 simSOL. The warehouse east of here also accepts lease applications.' : 'Both jobs are signed off. Follow the east quay to the warehouse.'}</p>
+    <div className="grid gap-2 sm:grid-cols-2">{(Object.keys(PROJECTS) as RoofProject[]).map(id => <div key={id} className="rounded-xl border border-ink/30 p-3 flex flex-col">
+      <h4 className="font-display text-lg">{PROJECTS[id].name}</h4><p className="text-sm grow my-2">{PROJECTS[id].detail}</p>
+      <button className="chunk bg-butter px-2 py-2" disabled={!sold || projects.includes(id) || balance < cost}
+        data-testid={`build-${id}`} onClick={() => { if (act(() => game.buildProject(id))) sfx.upgrade(); }}>
+        {projects.includes(id) ? 'Built on your roof' : !sold ? 'Bring a market receipt' : `Build · ${cost} simSOL`}
+      </button>
+    </div>)}</div>
+  </section>;
+}
+
+function WarehouseOffice({ bench }: { bench: boolean }) {
+  const s = useG(state => ({ ...state.warehouse, day: state.day, money: state.money, batches: state.harvest.length,
+    projectCount: state.projects.length, units: state.totalSold }));
+  const eligible = s.projectCount > 0 && s.units >= WAREHOUSE.minimumUnits && s.money >= WAREHOUSE.price;
+  return <Sheet title={bench ? 'Canal freight bench' : 'Canal warehouse'} kicker="Old Industrial Ward" accent="bg-jade" test="modal-warehouse">
+    {bench ? <>
+      <p>The barge calls once each day. Put your two oldest batches aboard for their market value and a {WAREHOUSE.dispatchFee} simSOL handling fee.</p>
+      <p className="text-sm my-3">{s.batches} unpacked batches in your bag.</p>
+      <button className="chunk bg-butter px-4 py-2" data-testid="dispatch-freight" disabled={s.lastDispatchDay === s.day || s.batches < 2}
+        onClick={() => { if (act(() => game.dispatchFreight())) sfx.coin(); }}>{s.lastDispatchDay === s.day ? 'Next barge tomorrow' : 'Load two batches'}</button>
+    </> : <>
+      <p>A worn loading ticket hangs from the shutter. The canal co-op rents this bay to growers who already supply the neighborhood.</p>
+      <ul className="my-3 text-sm list-disc pl-5"><li>Finish one rooftop project · {s.projectCount ? 'signed' : 'pending'}</li>
+        <li>Trade {WAREHOUSE.minimumUnits} harvest units · {s.units} recorded</li><li>Lease deposit · {WAREHOUSE.price} simSOL</li></ul>
+      <button className="chunk bg-butter px-4 py-2" data-testid="lease-warehouse" disabled={s.leased || !eligible}
+        onClick={() => { if (act(() => game.leaseWarehouse())) sfx.upgrade(); }}>{s.leased ? 'Leased · use the bench inside' : 'Sign the lease · 90 simSOL'}</button>
+    </>}
+  </Sheet>;
+}
+
+function Freight({ shop }: { shop?: ShopId }) {
+  const hasCart = useG(s => s.projects.includes('cart'));
+  const crate = useG(s => s.crate);
+  const batch = useG(s => s.harvest[0]);
+  const deliveries = useG(s => s.deliveries);
+  if (!hasCart) return null;
+  const stop = DELIVERY_STOPS[deliveries % DELIVERY_STOPS.length];
+  if (shop && shop !== stop.shop) return null;
+  const ready = shop ? !!crate : !crate && !!batch;
+  return <section className="mt-3 rounded-xl border border-ink/30 p-3">
+    <h3 className="font-display text-xl">{stop.name} order</h3>
+    <p className="my-2 text-sm">{stop.note} {crate ? `Your crate holds ${crate.units} units of ${seedName(crate.strain)}.`
+      : 'Pack one harvested batch at the cart beside your roof stairs.'}</p>
+    <p className="text-sm mb-3">Market value + 5 simSOL delivery fee · {deliveries} completed</p>
+    <button disabled={!ready} className="chunk bg-butter px-4 py-2" data-testid={shop ? 'deliver-crate' : 'pack-crate'}
+      onClick={() => { if (act(() => shop ? game.deliverCrate(shop) : game.packCrate())) sfx.coin(); }}>
+      {shop ? 'Hand over crate' : crate ? 'Crate in transit' : 'Pack oldest batch'}
+    </button>
+  </section>;
+}
+
 function Exchange() {
   const harvest = useG(s => s.harvest);
   const totalSold = useG(s => s.totalSold);
@@ -221,8 +288,9 @@ function Exchange() {
           onClick={() => { if (act(() => game.sellAll())) { sfx.coin(); fx.emit(player.x, player.z, '#fbd255', 26, 1.6); } }}>
           Sell all for {total.toFixed(2)} simSOL
         </button>
-        <span className="text-xs font-bold text-muted-foreground">Lifetime traded: <Sim v={totalSold} /></span>
+        <span className="text-xs font-bold text-muted-foreground">Lifetime traded: {totalSold} harvest units</span>
       </div>
+      <RoofWorks />
       <p className="text-xs font-bold text-muted-foreground mt-3">$POTIFY units are a fictional inventory measure, not tokens and not a real-world quantity. simSOL has no real value and cannot be withdrawn.</p>
     </>
   );
@@ -285,14 +353,18 @@ function Talk({ npc, line }: { npc: NpcId; line: string }) {
   const def = NPCS[npc];
   const f = useG(s => s.friendship[npc] ?? 0);
   const obj = useG(s => objective(s));
+  const { story, sold } = useG(s => ({ story: s.story, sold: s.quest.sold }));
+  const [reply, setReply] = useState<string>();
+  const choices = storyChoices(story, npc, sold);
+  const dialogue = reply ?? storyLine(story, npc, sold) ?? line;
   const hearts = Math.min(5, Math.floor(f / 1));
   return (
     <Sheet title={def.name} kicker={def.role} accent="bg-butter" test="modal-talk">
       <div className="flex gap-4">
-        <div className="shrink-0"><AvatarFigure shirt={def.shirt} skin={def.skin} size={76} /></div>
+        <div className="shrink-0"><AvatarFigure shirt={def.shirt} skin={def.skin} size={76} variant={npc} /></div>
         <div className="flex-1">
-          <div className="relative rounded-2xl border-[2.5px] border-ink bg-white/70 p-3 font-bold leading-relaxed" data-testid="text-dialogue">
-            {line || `${def.name} smiles and waves.`}
+          <div className="relative rounded-2xl border-[2.5px] border-ink bg-white/70 p-3 font-bold leading-relaxed" data-testid="text-dialogue" aria-live="polite">
+            {dialogue || `${def.name} smiles and waves.`}
           </div>
           <div className="flex items-center gap-1 mt-3" data-testid="text-friendship">
             {Array.from({ length: 5 }).map((_, i) => <Heart key={i} className={`w-5 h-5 ${i < hearts ? 'fill-coral text-ink' : 'text-ink/30'}`} />)}
@@ -300,12 +372,95 @@ function Talk({ npc, line }: { npc: NpcId; line: string }) {
           </div>
         </div>
       </div>
+      {choices.length > 0 && (
+        <div className="mt-4 grid gap-2">
+          {choices.map(choice => (
+            <button key={choice.id} className="chunk bg-cream px-3 py-2 text-left" data-testid={`story-${choice.id}`}
+              onClick={() => {
+                const change = game.chooseStoryReply(npc, choice.id);
+                if (!change) return;
+                setReply(change.reply);
+                toast(change.message);
+                sfx.talk();
+              }}>
+              {choice.label}
+            </button>
+          ))}
+        </div>
+      )}
+      {npc === 'mira' && story.filed && (
+        <button className="chunk bg-jade text-cream w-full py-2 mt-4" onClick={() => openModal({ type: 'story-page', page: 'filed' })}>
+          Read A Missing Season
+        </button>
+      )}
       <div className="mt-4 rounded-xl bg-muted p-3 text-sm font-bold">
         <span className="text-jade font-black uppercase text-xs tracking-wider">Tip</span>
         <p>{npc === 'mira' ? `Next for you: ${obj.title}. ${obj.description}` : npc === 'moss' ? 'Soil bags cost a little but a nourished bed stays healthy longer.' : 'Green Exchange buys harvests. Higher quality, better simSOL.'}</p>
       </div>
       <p className="text-xs font-bold text-muted-foreground mt-3">Friendship grows once per day when you stop by to chat.</p>
       <button className="chunk w-full bg-tangerine text-cream py-3 mt-3" onClick={() => closeModal()} data-testid="button-bye">See you around</button>
+    </Sheet>
+  );
+}
+
+function FieldNotes() {
+  const { story, sold } = useG(s => ({ story: s.story, sold: s.quest.sold }));
+  const ids = Object.keys(SIDE_TASKS) as SideTask[];
+  const pages: StoryPage[] = [];
+  if (story.leaseRead) pages.push('lease');
+  pages.push(...ids.filter(id => story.tasks[id] === 'found' || story.tasks[id] === 'complete'));
+  if (story.filed) pages.push('filed');
+  const jobs = ids.filter(id => story.tasks[id] !== 'available');
+  return (
+    <Sheet title="Field notes" kicker="Canopy Quarter" accent="bg-jade" test="modal-field-notes">
+      <div className="rounded-2xl border-[2.5px] border-ink bg-butter/40 p-4">
+        <p className="font-display text-xl">The Lease</p>
+        <p className="mt-1 text-sm font-bold">{storyObjective(story, sold)}</p>
+      </div>
+      {jobs.length > 0 && (
+        <>
+          <h3 className="font-display text-lg mt-4 mb-2">Neighborhood jobs</h3>
+          <ul className="grid gap-2">
+            {jobs.map(id => {
+              const task = SIDE_TASKS[id];
+              const stage = story.tasks[id];
+              const detail = stage === 'complete' ? `Complete · ${task.reward}` :
+                stage === 'found' ? `Share what you found with ${task.resident}.` : task.objective;
+              return <li key={id} className="rounded-xl bg-muted px-3 py-2"><p className="font-black">{task.title}</p><p className="text-sm">{detail}</p></li>;
+            })}
+          </ul>
+        </>
+      )}
+      {pages.length > 0 && (
+        <>
+          <h3 className="font-display text-lg mt-4 mb-2">Collected clues</h3>
+          <div className="grid gap-2">
+            {pages.map(page => (
+              <button key={page} className="chunk bg-cream px-3 py-2 text-left flex items-center gap-2"
+                onClick={() => openModal({ type: 'story-page', page, fromNotes: true })}>
+                <BookOpen className="w-4 h-4 text-jade shrink-0" aria-hidden="true" />{STORY_PAGES[page].title}
+              </button>
+            ))}
+          </div>
+        </>
+      )}
+      <button className="chunk bg-jade text-cream w-full py-2 mt-4" onClick={() => openModal({ type: 'map' })}>Find a neighbor on the map</button>
+    </Sheet>
+  );
+}
+
+function StoryPagePanel({ page, fromNotes }: { page: StoryPage; fromNotes?: boolean }) {
+  const entry = STORY_PAGES[page];
+  const lead = useG(s => s.story.lead);
+  return (
+    <Sheet title={entry.title} accent="bg-[#5c6b48]" test={`modal-story-${page}`}>
+      <div className="rounded-xl border-[2.5px] border-[#75604c] bg-[#f7eacf] px-4 py-3 text-base leading-relaxed text-[#3b2f25]">
+        {entry.text.map(line => <p className="my-2" key={line}>{line}</p>)}
+        {page === 'filed' && lead && <p className="my-2 border-t border-[#75604c]/40 pt-2">{FILED_NOTES[lead]}</p>}
+      </div>
+      <button className="chunk bg-cream w-full py-2 mt-4" onClick={() => openModal({ type: 'field-notes' })}>
+        {fromNotes ? 'Back to field notes' : 'Open field notes'}
+      </button>
     </Sheet>
   );
 }
@@ -359,12 +514,14 @@ function Inventory() {
 
 /* ---------------- Map & objectives ---------------- */
 function MapPanel() {
+  const bedCount = useG(s => s.plots.length);
   const area = useUI(s => s.area);
   const quest = useG(s => s.quest);
   const obj = useG(s => objective(s));
   const minute = useG(s => Math.floor(s.minute / 30) * 30);
   const day = useG(s => s.day);
-  const steps: [keyof typeof quest, string][] = [['met', 'Say hello to Mira'], ['bought', 'Buy seeds at Seed & Signal'], ['planted', 'Plant a rooftop bed'], ['watered', 'Water a bed'], ['harvested', 'Harvest a grown plant'], ['sold', 'Sell at Green Exchange'], ['upgraded', 'Buy a Rootworks upgrade']];
+  const projectBuilt = useG(s => s.projects.length > 0);
+  const steps: [keyof typeof quest | 'project', string][] = [['met', 'Say hello to Mira'], ['bought', 'Buy seeds at Seed & Signal'], ['planted', 'Plant a rooftop bed'], ['watered', 'Water a bed'], ['harvested', 'Harvest a grown plant'], ['sold', 'Sell at Green Exchange'], ['project', 'Commission a roof project'], ['upgraded', 'Buy a Rootworks upgrade']];
   const px = player.x, pz = player.z;
   return (
     <Sheet title="Map & goals" kicker="No fast travel. Walk, take the stairs, say hi." wide accent="bg-jade" test="modal-map">
@@ -377,15 +534,15 @@ function MapPanel() {
               <text x="-7" y="-5" fontSize="1.4" textAnchor="middle" fontWeight="900">HOME</text>
               <rect x="3" y="-9" width="8" height="7" fill="#bfeff0" stroke="#13293a" strokeWidth=".3" />
               <text x="7" y="-5" fontSize="1.2" textAnchor="middle" fontWeight="900">GLASS</text>
-              {BEDS.map(b => <rect key={b.index} x={b.x - 1.3} y={b.z - 0.8} width="2.6" height="1.6" fill="#f2703f" stroke="#13293a" strokeWidth=".25" />)}
+              {BEDS.slice(0, bedCount).map(b => <rect key={b.index} x={b.x - 1.3} y={b.z - 0.8} width="2.6" height="1.6" fill="#f2703f" stroke="#13293a" strokeWidth=".25" />)}
               <rect x="8.6" y="8.2" width="3.2" height="3.6" fill="#1f9e89" stroke="#13293a" strokeWidth=".3" />
               <text x="10.2" y="10.4" fontSize="1" textAnchor="middle" fill="#fff" fontWeight="900">STAIRS</text>
               {area === 'roof' && <circle cx={px} cy={pz} r=".8" fill="#ef6f7c" stroke="#13293a" strokeWidth=".3" />}
             </svg>
           </MapCard>
           <MapCard title="Canopy Quarter" here={area === 'town'}>
-            <svg viewBox="61 -17 38 34" className="w-full">
-              <rect x="62" y="-16" width="36" height="30" rx="1.5" fill="#f6d9b2" stroke="#13293a" strokeWidth=".4" />
+            <svg viewBox="61 -17 56 34" className="w-full">
+              <rect x="62" y="-16" width="54" height="30" rx="1.5" fill="#f6d9b2" stroke="#13293a" strokeWidth=".4" />
               {Object.entries(SHOPS).map(([id, s]) => (
                 <g key={id}>
                   <rect x={s.x - s.w / 2} y={s.z - s.d / 2} width={s.w} height={s.d} fill={s.color} stroke="#13293a" strokeWidth=".3" />
@@ -395,6 +552,8 @@ function MapPanel() {
               <circle cx="80" cy="0" r="2.2" fill="#8fd6e2" stroke="#13293a" strokeWidth=".3" />
               <rect x="76" y="14.4" width="8" height="2" fill="#fff1d6" stroke="#13293a" strokeWidth=".3" />
               <text x="80" y="15.8" fontSize="1.1" textAnchor="middle" fontWeight="900">HOME</text>
+              <rect x="102" y="-11" width="12" height="9" fill="#97664e" stroke="#463d35" strokeWidth=".3" />
+              <text x="108" y="-6" fontSize="1.7" textAnchor="middle" fill="white">WAREHOUSE</text>
               {area === 'town' && <circle cx={px} cy={pz} r=".9" fill="#ef6f7c" stroke="#13293a" strokeWidth=".3" />}
             </svg>
           </MapCard>
@@ -412,11 +571,14 @@ function MapPanel() {
           <ul className="mt-3 grid gap-1.5">
             {steps.map(([k, label]) => (
               <li key={k} className="flex items-center gap-2 font-bold text-sm" data-testid={`goal-${k}`}>
-                <span className={`w-5 h-5 rounded-md border-2 border-ink ${quest[k] ? 'bg-jade' : 'bg-white/60'}`} />
-                <span className={quest[k] ? 'line-through text-muted-foreground' : ''}>{label}</span>
+                <span className={`w-5 h-5 rounded-md border-2 border-ink ${(k === 'project' ? projectBuilt : quest[k]) ? 'bg-jade' : 'bg-white/60'}`} />
+                <span className={(k === 'project' ? projectBuilt : quest[k]) ? 'line-through text-muted-foreground' : ''}>{label}</span>
               </li>
             ))}
           </ul>
+          <button className="chunk bg-cream w-full px-3 py-2 mt-4 flex items-center justify-center gap-2" onClick={() => openModal({ type: 'field-notes' })}>
+            <BookOpen className="w-4 h-4 text-jade" aria-hidden="true" />Field notes
+          </button>
         </div>
       </div>
     </Sheet>

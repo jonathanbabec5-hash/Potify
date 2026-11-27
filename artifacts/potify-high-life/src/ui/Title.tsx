@@ -1,3 +1,4 @@
+import campaignArt from '../../../../docs/marketing/assets/2026-11-08-potify-city-concept.jpg';
 import { useState } from 'react';
 import { ArrowRight, Check, Play, RotateCcw, Sprout } from 'lucide-react';
 import { game } from '@/game/store';
@@ -24,15 +25,16 @@ export function Title() {
 
   return (
     <div className="fixed inset-0 z-30 flex flex-col pointer-events-none">
+      <img src={campaignArt} alt="" className="absolute inset-0 h-full w-full object-cover object-center" />
       <div className="absolute inset-0 bg-gradient-to-r from-[#13293a]/75 via-[#13293a]/25 to-transparent" />
       <div className="absolute inset-x-0 bottom-0 h-1/3 bg-gradient-to-t from-[#13293a]/60 to-transparent" />
       <div className="relative flex-1 flex flex-col md:flex-row items-center md:items-stretch gap-6 p-5 md:p-12 overflow-auto pointer-events-auto">
         <div className="flex flex-col justify-center md:max-w-xl text-center md:text-left pt-6 md:pt-0">
-          <p className="font-black uppercase tracking-[0.3em] text-butter text-xs md:text-sm">A rooftop life above the Canopy Quarter</p>
-          <h1 className="logo-type text-[19vw] md:text-[9.5rem] leading-[0.85] mt-3 -rotate-2 bob" data-testid="text-title">POTIFY</h1>
+          <p className="font-black uppercase tracking-[0.3em] text-butter text-xs md:text-sm">Canopy Quarter · Roof 7B</p>
+          <h1 className="city-wordmark leading-[0.85] mt-3" data-testid="text-title">POTIFY</h1>
           <p className="font-display text-cream text-2xl md:text-4xl mt-5 [text-shadow:0_3px_0_#13293a]">A Wonderful High Life</p>
           <p className="text-cream/85 font-bold mt-4 max-w-md mx-auto md:mx-0 text-sm md:text-base">
-            New keys, six empty grow beds, a glass greenhouse, and a whole little city of neighbors downstairs. Start small. Water often. Say hello.
+            Your lease is on the kitchen table. Downstairs, Mira remembers who tended this roof before you. What you build here begins with the first crate you carry to market.
           </p>
         </div>
 
@@ -126,8 +128,8 @@ export function Title() {
         </div>
       </div>
       <div className="relative px-5 pb-4 flex justify-between text-[11px] font-bold text-cream/70 pointer-events-none">
-        <span>An original game. Offline. No accounts. No wallets.</span>
-        <span className="hidden md:inline">v0.1 · first slice</span>
+        <span>Canopy Quarter · Original campaign illustration</span>
+        <span className="hidden md:inline">Roof 7B</span>
       </div>
     </div>
   );

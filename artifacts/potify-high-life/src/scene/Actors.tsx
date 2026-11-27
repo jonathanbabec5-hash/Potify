@@ -1,10 +1,10 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useMemo, useRef } from 'react';
 import { useFrame } from '@react-three/fiber';
 import { useKeyboardControls } from '@react-three/drei';
 import * as THREE from 'three';
 import { game } from '@/game/store';
 import { joy, npcPos, player, ui, useG, useUI, type Interactable, type NpcId } from '@/game/runtime';
-import { NPCS, ROOF_BOUNDS, ROOF_COLLIDERS, STATIC_TARGETS, TOWN_BOUNDS, TOWN_COLLIDERS, npcSchedule, zoneAt, type AABB } from '@/game/world';
+import { CLOSED_WARD_COLLIDERS, NPCS, PLAYER_HAIR, ROOF_BOUNDS, roofColliders, STATIC_TARGETS, TOWN_BOUNDS, TOWN_COLLIDERS, npcSchedule, zoneAt, type AABB } from '@/game/world';
 import { sfx } from '@/game/audio';
 import { Character } from '@/scene/Character';
 
@@ -32,13 +32,18 @@ export function Player() {
   const [, getKeys] = useKeyboardControls<Ctl>();
   const shirt = useG(s => s.shirt);
   const skin = useG(s => s.skin);
+  const leased = useG(s => s.warehouse.leased);
+  const town = leased ? TOWN_COLLIDERS : CLOSED_WARD_COLLIDERS;
+  const hasGlass = useG(s => s.projects.includes('glasshouse'));
+  const hasCart = useG(s => s.projects.includes('cart'));
+  const roof = useMemo(() => roofColliders(hasGlass, hasCart), [hasGlass, hasCart]);
   const lastSave = useRef(0);
   const stepAcc = useRef(0);
 
   useEffect(() => {
     const p = game.getState().position;
     const area = p.zone === 'town' ? 'town' : 'roof';
-    const cols = area === 'town' ? TOWN_COLLIDERS : ROOF_COLLIDERS;
+    const cols = area === 'town' ? town : roof;
     const ok = Number.isFinite(p.x) && Number.isFinite(p.z) && !blocked(p.x, p.z, cols);
     player.x = ok ? p.x : area === 'town' ? 80 : 0;
     player.z = ok ? p.z : area === 'town' ? 12 : 4;
@@ -58,7 +63,7 @@ export function Player() {
     const len = Math.hypot(mx, mz);
     if (len > 1) { mx /= len; mz /= len; }
     const sp = (run ? 7 : 4.4) * Math.min(1, len);
-    const cols = u.area === 'town' ? TOWN_COLLIDERS : ROOF_COLLIDERS;
+    const cols = u.area === 'town' ? town : roof;
     const b = u.area === 'town' ? TOWN_BOUNDS : ROOF_BOUNDS;
     if (len > 0.08) {
       const nx = THREE.MathUtils.clamp(player.x + mx * sp * dt, b.minX, b.maxX);
@@ -91,7 +96,8 @@ export function Player() {
     let best: Interactable | null = null;
     let bd = Infinity;
     for (const t of STATIC_TARGETS) {
-      if (t.area !== u.area) continue;
+      if (t.area !== u.area || (t.kind === 'freight' && !leased) || (t.kind === 'cart' && !hasCart) ||
+          (t.kind === 'bed' && (t.index ?? 0) >= 6 && !hasGlass)) continue;
       const d = Math.hypot(t.x - player.x, t.z - player.z);
       if (d < t.r && d < bd) { bd = d; best = t; }
     }
@@ -114,7 +120,7 @@ export function Player() {
 
   return (
     <group ref={group}>
-      <Character shirt={shirt} skin={skin} hair="#13293a" variant="player" speed={speed} />
+      <Character shirt={shirt} skin={skin} hair={PLAYER_HAIR} variant="player" speed={speed} />
     </group>
   );
 }

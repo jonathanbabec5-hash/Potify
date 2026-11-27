@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { Backpack, CalendarDays, Map as MapIcon, Menu, Moon, Shirt, Sun, Volume2, VolumeX, ZoomIn, ZoomOut, ChevronDown } from 'lucide-react';
+import { Backpack, BookOpen, CalendarDays, Map as MapIcon, Menu, Moon, Shirt, Sun, Volume2, VolumeX, ZoomIn, ZoomOut, ChevronDown } from 'lucide-react';
 import { game, objective, formatTime } from '@/game/store';
 import { joy, openModal, ui, useG, useUI, type Modal } from '@/game/runtime';
 import { interact } from '@/game/interact';
@@ -8,7 +8,7 @@ import { CAMERA_PRESETS } from '@/scene/GameCanvas';
 import { Kbd, Sim } from '@/ui/common';
 
 const ZONE_TITLES: Record<string, [string, string]> = {
-  rooftop: ['The Rooftop', 'Six beds and a view'],
+  rooftop: ['The Rooftop', 'Canal overlook'],
   greenhouse: ['The Greenhouse', 'Glass, warmth, drying rack'],
   apartment: ['Home 7B', 'Bed, wardrobe, radio'],
   town: ['Canopy Quarter', 'Shops, square and neighbors'],
@@ -25,7 +25,7 @@ function HudButton({ icon, label, k, modal }: { icon: React.ReactNode; label: st
     <button onClick={() => openModal(modal)} className="chunk bg-cream w-11 h-11 md:w-auto md:h-11 md:px-3 flex items-center justify-center gap-2" aria-label={label} data-testid={`button-hud-${label.toLowerCase()}`}>
       {icon}
       <span className="hidden lg:inline text-sm">{label}</span>
-      <span className="hidden md:inline key">{k}</span>
+      <span className="hidden md:inline"><span className="key">{k}</span></span>
     </button>
   );
 }
@@ -36,9 +36,10 @@ export function HUD({ touch }: { touch: boolean }) {
   const money = useG(s => s.money);
   const muted = useG(s => s.settings.muted);
   const obj = useG(s => objective(s));
+  const showNotes = useG(s => s.quest.met || s.story.leaseRead);
   const prompt = useUI(s => s.prompt);
   const zone = useUI(s => s.zone);
-  const [objOpen, setObjOpen] = useState(true);
+  const [objOpen, setObjOpen] = useState(!touch);
   const [banner, setBanner] = useState(zone);
   const [bannerKey, setBannerKey] = useState(0);
   useEffect(() => { setBanner(zone); setBannerKey(k => k + 1); }, [zone]);
@@ -80,6 +81,11 @@ export function HUD({ touch }: { touch: boolean }) {
             ))}
           </div>
         </button>
+        {showNotes && (
+          <button className="chunk bg-cream w-fit px-3 py-2 flex items-center gap-2 text-sm" onClick={() => openModal({ type: 'field-notes' })} data-testid="button-field-notes">
+            <BookOpen className="w-4 h-4 text-jade" aria-hidden="true" />Field notes
+          </button>
+        )}
       </div>
 
       {/* top-right: menus */}
@@ -97,7 +103,7 @@ export function HUD({ touch }: { touch: boolean }) {
       </div>
 
       {/* zone banner */}
-      <div key={bannerKey} className="banner absolute top-[18%] left-1/2 -translate-x-1/2 text-center">
+      <div key={bannerKey} className="banner absolute top-[38%] md:top-[18%] left-1/2 -translate-x-1/2 text-center">
         <p className="font-display text-3xl md:text-5xl text-cream [-webkit-text-stroke:2px_#13293a] [paint-order:stroke_fill] [text-shadow:0_4px_0_#13293a]">{ZONE_TITLES[banner]?.[0]}</p>
         <p className="font-black text-xs uppercase tracking-[0.25em] text-cream [text-shadow:0_2px_0_#13293a] mt-1">{ZONE_TITLES[banner]?.[1]}</p>
       </div>

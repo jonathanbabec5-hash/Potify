@@ -16,7 +16,7 @@ export function Beds() {
   const bigBeds = useG(s => s.upgrades.includes('beds'));
   return (
     <>
-      {BEDS.map(b => (
+      {BEDS.slice(0, plots.length).map(b => (
         <Bed key={b.index} x={b.x} z={b.z} big={bigBeds} {...(plots[b.index] ?? { strain: null, growth: 0, water: 0, health: 100, fed: false })} />
       ))}
     </>
@@ -29,7 +29,7 @@ const Bed = memo(function Bed({ x, z, big, strain, growth, water, health, fed }:
   const ready = !!strain && growth >= 100;
   return (
     <group position={[x, 0, z]}>
-      <mesh position={[0, 0.3, 0]} material={mat(big ? '#1f9e89' : '#f2703f')} castShadow receiveShadow>
+      <mesh position={[0, 0.3, 0]} material={mat(big ? '#506d58' : '#986344')} castShadow receiveShadow>
         <boxGeometry args={[2.6, 0.6, 1.6]} />
       </mesh>
       <mesh position={[0, 0.62, 0]} material={mat('#fff7e8')}>
@@ -45,7 +45,7 @@ const Bed = memo(function Bed({ x, z, big, strain, growth, water, health, fed }:
         <Plant key={px} x={px} growth={growth} health={health} color={seed.color} ready={ready} offset={i} />
       ))}
       {strain && (ready || water < 30 || health < 40) && (
-        <Flag y={growth >= 60 ? 2.6 : 1.7} color={ready ? '#fbd255' : water < 30 ? '#4fb3e8' : '#ef6f7c'} />
+        <Flag y={growth >= 60 ? 2.6 : 1.7} color={ready ? '#c4a869' : water < 30 ? '#4fb3e8' : '#886951'} />
       )}
     </group>
   );
@@ -56,7 +56,7 @@ function Plant({ x, growth, health, color, ready, offset }: { x: number; growth:
   useFrame(st => {
     if (g.current) g.current.rotation.z = Math.sin(st.clock.elapsedTime * 1.3 + offset * 1.7 + x) * 0.05;
   });
-  const leaf = useMemo(() => new THREE.Color('#5dbb4a').lerp(new THREE.Color('#d8b04a'), Math.max(0, (60 - health) / 60)).getStyle(), [health]);
+  const leaf = useMemo(() => new THREE.Color('#65904a').lerp(new THREE.Color('#d8b04a'), Math.max(0, (60 - health) / 60)).getStyle(), [health]);
   const s = growth < 6 ? 0 : 0.25 + (Math.min(growth, 100) / 100) * 0.85;
   if (growth < 6) {
     return <mesh position={[x, 0.7, 0]} material={mat('#6b4a33')}><icosahedronGeometry args={[0.12, 0]} /></mesh>;

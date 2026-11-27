@@ -40,9 +40,17 @@ export function interact(t: Interactable | null) {
       toast(m ? 'Radio on: Low Tide late-night set.' : 'Radio off. Just the city hum now.');
       break;
     }
+    case 'warehouse-lease': case 'freight': openModal({ type: t.kind }); break;
+    case 'cart': openModal({ type: 'cart' }); break;
     case 'rack': openModal({ type: 'inventory' }); break;
     case 'planner': openModal({ type: 'calendar' }); break;
     case 'board': openModal({ type: 'map' }); break;
+    case 'story-item': {
+      if (!t.storyItem) break;
+      game.readStoryItem(t.storyItem);
+      openModal({ type: 'story-page', page: t.storyItem });
+      break;
+    }
   }
 }
 
