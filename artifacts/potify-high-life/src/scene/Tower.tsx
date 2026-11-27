@@ -2,7 +2,7 @@ import { LeaseApartment, LoftWindows, WindowLight } from './LeaseApartment';
 import { SurfaceBlock } from './Surfaces';
 import { SolidSurfaces } from './SolidSurfaces';
 import { useRef } from 'react';
-import { DoubleSide } from 'three';
+import { DoubleSide, Quaternion, Vector3 } from 'three';
 import { useTexture } from '@react-three/drei';
 import housePrint from '../../../../docs/marketing/assets/2026-11-08-potify-city-concept.jpg';
 import { useG, useUI } from '@/game/runtime';
@@ -58,6 +58,66 @@ function CampaignPrint() {
     <mesh position-z={0.035}><planeGeometry args={[1.35,0.875]}/><meshLambertMaterial map={print}/></mesh>
   </group>;
 }
+type RailPoint = [number, number, number];
+const railCrown = '#473628';
+const railMetal = '#344942';
+
+function RailBeam({ from, to, size, color }: {
+  from: RailPoint;
+  to: RailPoint;
+  size: [number, number];
+  color: string;
+}) {
+  const start = new Vector3(...from);
+  const end = new Vector3(...to);
+  const direction = end.clone().sub(start);
+  const length = direction.length();
+  const quaternion = new Quaternion().setFromUnitVectors(new Vector3(0, 0, 1), direction.normalize());
+  return (
+    <mesh position={start.lerp(end, 0.5)} quaternion={quaternion} material={mat(color)} castShadow receiveShadow>
+      <boxGeometry args={[...size, length + 0.035]} />
+    </mesh>
+  );
+}
+
+// Finished oak grips sit on iron posts. Keep all pieces at the edges of the
+// existing treads, with the midpoint crossover and both hall entrances open.
+function StairRails() {
+  const half = STOREY / 2;
+  const guard = 0.91;
+  const sides: [number, number][] = [[2.85, 5.34], [5.71, 8.23]];
+  return <>
+    {sides.map(([outer, inner], i) => [outer, inner].map(x => {
+      const hall = i === 0 ? STOREY : 0;
+      return <group key={x}>
+        <RailBeam from={[x, hall + guard, STAIR_START]} to={[x, half + guard, TURN]} size={[0.114, 0.105]} color={railCrown} />
+        <RailBeam from={[x, hall + 0.29, STAIR_START]} to={[x, half + 0.29, TURN]} size={[0.042, 0.045]} color={railMetal} />
+        {Array.from({ length: 10 }, (_, n) => {
+          const t = n / 9;
+          const z = STAIR_START + (TURN - STAIR_START) * t;
+          const y = hall + (half - hall) * t;
+          const newel = n === 0 || n === 9;
+          const width = newel ? 0.102 : 0.043;
+          return <group key={n}>
+            <Box at={[x, y + 0.39, z]} size={[width, 0.94, width]} color={railMetal} />
+            {newel && <Box at={[x, y + guard, z]} size={[0.145, 0.12, 0.145]} color={railCrown} />}
+          </group>;
+        })}
+      </group>;
+    }))}
+    {([[2.85, TURN, 2.85, -5.87], [8.23, TURN, 8.23, -5.87], [2.85, -5.87, 8.23, -5.87]] as const).map(([x, z, ex, ez], i) => (
+      <group key={i}>
+        <RailBeam from={[x, half + guard, z]} to={[ex, half + guard, ez]} size={[0.114, 0.105]} color={railCrown} />
+        <RailBeam from={[x, half + 0.29, z]} to={[ex, half + 0.29, ez]} size={[0.042, 0.045]} color={railMetal} />
+        {Array.from({ length: i === 2 ? 11 : 5 }, (_, n) => {
+          const t = (n + 1) / (i === 2 ? 12 : 5);
+          return <Box key={n} at={[x + (ex - x) * t, half + 0.43, z + (ez - z) * t]} size={[0.05, 0.89, 0.05]} color={railMetal} />;
+        })}
+      </group>
+    ))}
+  </>;
+}
+
 function Stairwell() {
   const run = STAIR_START - TURN,
     steps = 10,
@@ -77,34 +137,9 @@ function Stairwell() {
               />
             );
           })}
-          {[-0.99, 1].map((sign) => (
-            <mesh
-              key={sign}
-              position={[
-                (left ? 4.1 : 6.95) + sign * 1.27,
-                (left ? 2.7 : 0.9) + 0.82,
-                (TURN + STAIR_START) / 2,
-              ]}
-              rotation-x={left ? -Math.atan(half / run) : Math.atan(half / run)}
-              material={mat('#4a574e')}
-            >
-              <boxGeometry args={[0.075, 0.09, Math.hypot(half, run)]} />
-            </mesh>
-          ))}
-          {[1, 4, 7, 9].map((i) => (
-            <Box
-              key={i}
-              at={[
-                left ? 2.85 : 8.2,
-                (left ? STOREY - (half * i) / 10 : (half * i) / 10) + 0.39,
-                STAIR_START - (run * i) / 10,
-              ]}
-              size={[0.06, 0.85, 0.06]}
-              color="#515d54"
-            />
-          ))}
         </group>
       ))}
+      <StairRails />
       <Box at={[5.52, half - 0.12, -4.82]} size={[5.9, 0.24, 2.37]} color="#918675" />
       <Box at={[4.1, STOREY - 0.12, 1.55]} size={[2.65, 0.24, 1.1]} color="#827767" />
     </SolidSurfaces>

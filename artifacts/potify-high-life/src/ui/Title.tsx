@@ -8,7 +8,9 @@ import { ArrowRight, Check, Play, RotateCcw, Sprout } from 'lucide-react';
 import { game } from '@/game/store';
 import { act, useG } from '@/game/runtime';
 import { resetResident, restoreResident } from '@/game/interact';
-import { configureAudio, sfx, unlockAudio } from '@/game/audio';
+import { FADE_MS } from '@/game/opening';
+import { preloadFirstLight } from '@/ui/Opening';
+import { beginOpeningAudio, configureAudio, sfx, unlockAudio } from '@/game/audio';
 import { SHIRTS, SKINS, Swatches, AvatarFigure } from '@/ui/common';
 
 export function Title() {
@@ -24,14 +26,17 @@ export function Title() {
 
   const [resetError, setResetError] = useState('');
 
-  const enter = () => {
-    restoreResident(true);
-    unlockAudio(); configureAudio(game.getState().settings, true); sfx.harvest();
+  const enter = (fresh = false) => {
+    const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (fresh) beginOpeningAudio(FADE_MS / 1000);
+    restoreResident(true, fresh ? { began: performance.now(), reduced, turnedAt: null } : null);
+    unlockAudio(); configureAudio(game.getState().settings, true);
+    if (!fresh) sfx.harvest();
   };
-  const cont = () => { unlockAudio(); if (started && acknowledged) enter(); else { setStep('create'); sfx.open(); } };
+  const cont = () => { unlockAudio(); if (started && acknowledged) enter(); else { preloadFirstLight(); setStep('create'); sfx.open(); } };
   const begin = () => {
     if (!ack) return;
-    if (act(() => game.start({ name: name.trim() || 'Rooftop Rookie', shirt, skin, ...look }), true)) enter();
+    if (act(() => game.start({ name: name.trim() || 'Rooftop Rookie', shirt, skin, ...look }), true)) enter(true);
   };
 
   return (

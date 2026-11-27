@@ -41,9 +41,22 @@ export function HUD({ touch }: { touch: boolean }) {
   const muted = useG(s => s.settings.muted);
   const obj = useG(s => objective(s));
   const showNotes = useG(s => s.quest.met || s.story.leaseRead);
+  const met = useG(s => s.quest.met);
+  const leaseRead = useG(s => s.story.leaseRead);
+  const modal = useUI(s => s.modal);
+  const fading = useUI(s => s.fading);
   const prompt = useUI(s => s.prompt);
   const zone = useUI(s => s.zone);
   const floor = useUI(s => s.floor);
+  const firstTask = met ? null : zone === 'tower'
+    ? leaseRead
+      ? { title: 'Take the lift to R', detail: 'The lift is at the east end of the hall. Mira is waiting on the roof.' }
+      : floor === 7
+        ? { title: 'Read the lease on the desk', detail: touch ? 'Tap Read when you’re beside the desk.' : 'Press E or click Read when you’re beside the desk.' }
+        : { title: 'Find Apartment 7B', detail: 'Take the lift to floor 7 and read the lease on the desk.' }
+    : zone === 'town' ? null : { title: 'Meet Mira on the rooftop', detail: 'Walk up to Mira and say hello.' };
+  const quietGuide = !visible && !modal && !fading ? firstTask : null;
+  const introPrompt = quietGuide && (prompt?.storyItem === 'lease' || prompt?.room === 'lift' || prompt?.npc === 'mira');
   const date = houseDate(day);
   const [objOpen, setObjOpen] = useState(!touch);
   const [banner, setBanner] = useState(zone);
@@ -54,6 +67,9 @@ export function HUD({ touch }: { touch: boolean }) {
 
   return (
     <div className="fixed inset-0 z-20 pointer-events-none select-none" style={{ paddingTop: 'env(safe-area-inset-top)' }}>
+      {quietGuide && <aside className="opening-objective" data-testid="quiet-first-objective" aria-label="Current objective">
+        <span>FIRST DAY</span><strong>{quietGuide.title}</strong><small>{quietGuide.detail}</small>
+      </aside>}
       {/* top-left: clock, money, objective */}
       {visible && <div data-testid="guidance-layer" className="absolute top-3 left-3 flex flex-col gap-2 max-w-[min(340px,62vw)] pointer-events-auto">
         <div className="flex gap-2 flex-wrap">
@@ -118,7 +134,7 @@ export function HUD({ touch }: { touch: boolean }) {
       </div>}
 
       {/* interaction prompt */}
-      {visible && prompt && !touch && (
+      {(visible || introPrompt) && prompt && !touch && (
         <button onClick={() => interact(ui.get().prompt)} className="pop absolute bottom-8 left-1/2 -translate-x-1/2 chip pointer-events-auto pl-2 pr-5 py-2 flex items-center gap-3" data-testid="button-prompt">
           <span className="key !h-8 !min-w-8 text-base">E</span>
           <span className="font-display text-lg">{prompt.verb}</span>

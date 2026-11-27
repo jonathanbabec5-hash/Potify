@@ -1,6 +1,7 @@
 import { useRef, useSyncExternalStore } from 'react';
 import { game } from '@/game/store';
 import { sfx } from '@/game/audio';
+import { newWalkHeading } from './walkCamera';
 import type { Resident, StoryItem, StoryPage } from '@/game/story';
 
 export type GS = ReturnType<typeof game.getState>;
@@ -44,6 +45,7 @@ export interface Toast { id: number; text: string; tone: 'good' | 'bad' }
 
 interface UIState {
   inGame: boolean;
+  opening: import('./opening').IntroState | null;
   modal: Modal;
   prompt: Interactable | null;
   toasts: Toast[];
@@ -56,7 +58,7 @@ interface UIState {
 }
 
 let uiState: UIState = {
-  inGame: false, modal: null, prompt: null, toasts: [], fading: false, ready: false, glLost: false,
+  inGame: false, opening: null, modal: null, prompt: null, toasts: [], fading: false, ready: false, glLost: false,
   area: 'roof', zone: 'rooftop', floor: 7,
 };
 const uiListeners = new Set<() => void>();
@@ -130,4 +132,4 @@ export const fx = {
   },
 };
 
-export const camCtl = { yawOffset: 0, pitch: -0.15 };
+export const camCtl = { yawOffset: 0, pitch: -0.15, dragging: false, manualUntil: 0, walk: newWalkHeading() };

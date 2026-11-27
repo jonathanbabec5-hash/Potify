@@ -31,8 +31,8 @@ export function GrowRoom({ glazing }: { glazing:boolean }) {
       <SurfaceBlock at={[7,2.68,-8.91]} size={[7.98,0.18,0.32]} finish="cedar"/>
       {[5.82,6.41,7.05,7.69,8.32,9.02].map(x=><Rail key={x} at={[x,1.93,-8.81]} size={[0.035,1.4,0.08]}/>)}
       <Rail at={[7.42,2.12,-8.81]} size={[3.26,0.037,0.08]}/>
-      <Rail at={[7,3.48,-5.5]} size={[0.11,0.12,6.95]}/>
-      {[-8.82,-7.22,-5.52,-3.81,-2.17].map(z=><group key={z}>
+      {glazing && <Rail at={[7,3.48,-5.5]} size={[0.11,0.12,6.95]}/>}
+      {glazing && [-8.82,-7.22,-5.52,-3.81,-2.17].map(z=><group key={z}>
         {[-1,1].map(side=><Rail key={side} at={[7+side*1.93,3.11,z]} size={[3.95,0.085,0.085]} tilt={-side*0.201}/>)}
       </group>)}
       {[-8.82,-7.15,-5.48,-3.81,-2.17].map(z=>[3.24,10.76].map(x=><Rail key={x+'/'+z} at={[x,1.6,z]} size={[0.066,2.22,0.066]}/>))}
@@ -55,6 +55,7 @@ export function GrowRoom({ glazing }: { glazing:boolean }) {
     <mesh position={[5.35,2.449,-8.19]} rotation-x={Math.PI/2}>
       <planeGeometry args={[1.85,0.16]}/><meshBasicMaterial color="#ffdd95" side={DoubleSide}/>
     </mesh>
+    {!glazing && <pointLight position={[7,2.95,-5.9]} color="#ffe2b9" distance={6.6} intensity={10} />}
     {glazing && [-1,1].map(side=><mesh key={side} position={[7+side*1.93,3.12,-5.5]} rotation={[-Math.PI/2,side*0.201,0]}>
       <planeGeometry args={[3.94,6.84]}/><meshLambertMaterial color="#a6c7be" side={DoubleSide} transparent opacity={0.105} depthWrite={false}/>
     </mesh>)}

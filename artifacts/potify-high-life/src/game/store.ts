@@ -1,3 +1,4 @@
+import { HIGH_CAMERA } from './opening.ts';
 import { CAMPAIGN_SHIRT, CAMPAIGN_SKIN, ORIGINAL_LOOK, readHeadLook, type HeadLook } from './appearance.ts';
 import { freshLife, validLife, validFloor, childStage, houseDate, NEIGHBORS, PASTIMES, PEOPLE, meetingFloor, type Neighbor, type Pastime, type HouseLife } from './house.ts';
 import { useSyncExternalStore } from 'react';
@@ -119,7 +120,7 @@ function freshState(): GameState {
     projects: [], crate: null, deliveries: 0, warehouse: { leased: false, lastDispatchDay: 0 }, story: freshStory(),
     life: freshLife(),
     position: { x: -4.4, z: -2.55, zone: 'tower', floor: 7 },
-    settings: { muted: false, music: true, camera: 1, quality: 'high' },
+    settings: { muted: false, music: true, camera: HIGH_CAMERA, quality: 'high', showHud: false },
     savedAt: 0, saveError: null, totalSold: 0,
   };
 }

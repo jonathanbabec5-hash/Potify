@@ -3,18 +3,22 @@ import { act, camCtl, fx, joy, openModal, player, toast, ui, type Area, type Int
 import { RECORD_TITLE, sfx } from '@/game/audio';
 import { STOREY, stairHeight } from './house';
 import { zoneAt } from '@/game/world';
+import { FIRST_LIGHT_YAW, FIRST_LIGHT_PITCH } from './opening';
+import { newWalkHeading } from './walkCamera';
 
 let transferTimer: ReturnType<typeof setTimeout> | undefined;
 let fadeTimer: ReturnType<typeof setTimeout> | undefined;
 
-export function restoreResident(inGame: boolean) {
+export function restoreResident(inGame: boolean, opening: ReturnType<typeof ui.get>['opening'] = null) {
   const { x, z, zone, floor = 7 } = game.getState().position;
   const area = zone === 'tower' || zone === 'town' ? zone : 'roof';
   player.x = x;
   player.z = z;
   player.y = zone === 'tower' ? (floor - 1) * STOREY + stairHeight(x, z) : 0;
   player.speed = joy.x = joy.y = 0;
-  ui.set({ area, zone, floor, inGame, modal: null, prompt: null, fading: false });
+  camCtl.walk = newWalkHeading(); camCtl.manualUntil = 0; camCtl.dragging = false;
+  if (opening) { camCtl.yawOffset = FIRST_LIGHT_YAW; camCtl.pitch = FIRST_LIGHT_PITCH; player.yaw = Math.PI; }
+  ui.set({ area, zone, floor, inGame, opening, modal: null, prompt: null, fading: false, toasts: [] });
 }
 
 export function resetResident() {
@@ -37,6 +41,7 @@ export function teleport(area: Area, x: number, z: number, yaw: number, floor = 
   sfx.door();
   transferTimer = setTimeout(() => {
     player.x = x; player.z = z; player.yaw = yaw;
+    camCtl.walk = newWalkHeading();
     const zone = zoneAt(area, x, z);
     ui.set({ area, zone, floor, prompt: null });
     game.setPosition({ x, z, zone, ...(area === 'tower' ? { floor } : {}) });
@@ -47,7 +52,7 @@ export function teleport(area: Area, x: number, z: number, yaw: number, floor = 
 
 export function interact(t: Interactable | null) {
   const u = ui.get();
-  if (!t || !u.inGame || u.modal || u.fading) return;
+  if (!t || !u.inGame || u.opening || u.modal || u.fading) return;
   switch (t.kind) {
     case 'bed': openModal({ type: 'bed', index: t.index ?? 0 }); break;
     case 'door-down': teleport('tower', 0.7, 2.9, Math.PI, 24); break;
@@ -55,12 +60,12 @@ export function interact(t: Interactable | null) {
     case 'street': teleport('town',80,13.1,Math.PI); break;
     case 'house': if (t.id === 'house-roof') { teleport('roof',7.2,9.9,-Math.PI/2); break; } if (t.room) openModal({ type: 'house', room: t.room }); break;
     case 'neighbor':
-      if (t.who) { const line = game.visitNeighbor(t.who); if (line) openModal({ type:'neighbor', who:t.who, line }); }
+      if (t.who) { const line = game.visitNeighbor(t.who); if (line) { openModal({ type:'neighbor', who:t.who, line }); sfx.murmur(t.who); } }
       break;
     case 'shop': openModal({ type: 'shop', shop: t.shop! }); break;
     case 'npc': {
       const line = game.talk(t.npc!);
-      sfx.talk();
+      sfx.murmur(t.npc!);
       fx.emit(t.x, t.z, '#ef6f7c', 8, 2);
       openModal({ type: 'talk', npc: t.npc!, line: typeof line === 'string' ? line : '' });
       break;

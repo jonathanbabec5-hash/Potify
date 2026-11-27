@@ -1,3 +1,4 @@
+import { movementBasis, sampleWalking } from '@/game/walkCamera';
 import { crossing, stairHeight, STOREY, TOP_FLOOR } from '@/game/house';
 import { TOWER_BOUNDS, towerColliders, towerTargets } from '@/game/towerWorld';
 import { teleport } from '@/game/interact';
@@ -34,6 +35,7 @@ export function Player() {
   const group = useRef<THREE.Group>(null);
   const speed = useRef(0);
   const [, getKeys] = useKeyboardControls<Ctl>();
+  const introducing = useUI(s => !!s.opening);
   const firstPerson = useG(s => s.settings.camera === 1);
   const handheld = window.matchMedia('(pointer: coarse)').matches;
   const shirt = useG(s => s.shirt);
@@ -64,19 +66,21 @@ export function Player() {
     const dt = Math.min(raw, 0.05);
     const u = ui.get();
     let mx = 0, mz = 0, run = false;
-    if (u.inGame && !u.modal && !u.fading) {
+    if (u.inGame && !u.opening && !u.modal && !u.fading) {
       const k = getKeys();
       mx = (k.right ? 1 : 0) - (k.left ? 1 : 0) + joy.x;
       mz = (k.back ? 1 : 0) - (k.forward ? 1 : 0) + joy.y;
-      const cos = Math.cos(camCtl.yawOffset), sin = Math.sin(camCtl.yawOffset);
+      const basis=movementBasis(camCtl.walk,mx,mz,camCtl.yawOffset,firstPerson||camCtl.dragging||performance.now()<camCtl.manualUntil);
+      const cos = Math.cos(basis), sin = Math.sin(basis);
       const side = mx;
       mx = side * cos - mz * sin;
       mz = side * sin + mz * cos;
       run = k.run;
-    }
+    } else movementBasis(camCtl.walk,0,0,camCtl.yawOffset,false);
     const len = Math.hypot(mx, mz);
     if (len > 1) { mx /= len; mz /= len; }
     const sp = (run ? 7 : 4.4) * Math.min(1, len);
+    const priorX=player.x, priorZ=player.z;
     let level = u.floor;
     const cols = u.area === 'tower' ? indoor : u.area === 'town' ? town : roof;
     const b = u.area === 'tower' ? TOWER_BOUNDS : u.area === 'town' ? TOWN_BOUNDS : ROOF_BOUNDS;
@@ -97,14 +101,18 @@ export function Player() {
           }
         }
       }
-      const target = Math.atan2(mx, mz);
-      let d = target - player.yaw;
-      d = Math.atan2(Math.sin(d), Math.cos(d));
+    }
+    const ax=player.x-priorX, az=player.z-priorZ;
+    sampleWalking(camCtl.walk,ax,az,dt);
+    const accepted=Math.hypot(ax,az);
+    if (dt>0 && accepted>.02*dt) {
+      const target = Math.atan2(ax, az);
+      const d = Math.atan2(Math.sin(target-player.yaw), Math.cos(target-player.yaw));
       player.yaw += d * Math.min(1, dt * 12);
-      stepAcc.current += sp * dt;
+      stepAcc.current += accepted;
       if (stepAcc.current > (run ? 1.1 : 0.85)) { stepAcc.current = 0; sfx.step(); }
     }
-    player.speed = len > 0.08 ? sp : 0;
+    player.speed = dt>0 ? accepted / dt : 0;
     speed.current = THREE.MathUtils.lerp(speed.current, player.speed, Math.min(1, dt * 10));
     player.y = u.area === 'tower' ? (level - 1) * STOREY + stairHeight(player.x,player.z) : 0;
     if (group.current) {
@@ -112,7 +120,7 @@ export function Player() {
       group.current.rotation.y = player.yaw;
     }
 
-    if (!u.inGame) return;
+    if (!u.inGame || u.opening) return;
     const zone = zoneAt(u.area, player.x, player.z);
     if (zone !== u.zone) { ui.set({ zone }); game.setPosition({ x: player.x, z: player.z, zone, ...(u.area === 'tower' ? {floor:level} : {}) }); }
     const now = st.clock.elapsedTime;
@@ -148,8 +156,8 @@ export function Player() {
   });
 
   return (
-    <group ref={group} visible={!firstPerson}>
-      {!firstPerson && <Suspense fallback={null}><Resident look={{ hairStyle, wearsCap }} shirt={shirt} skin={skin} speed={speed} handheld={handheld} /></Suspense>}
+    <group ref={group} visible={!firstPerson && !introducing}>
+      {!firstPerson && !introducing && <Suspense fallback={null}><Resident look={{ hairStyle, wearsCap }} shirt={shirt} skin={skin} speed={speed} handheld={handheld} /></Suspense>}
     </group>
   );
 }

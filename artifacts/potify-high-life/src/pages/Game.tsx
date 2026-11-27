@@ -7,6 +7,7 @@ import { interact } from '@/game/interact';
 import GameCanvas, { hasWebGL } from '@/scene/GameCanvas';
 import { Title } from '@/ui/Title';
 import { HUD, Toasts, Fade, setCamera } from '@/ui/HUD';
+import { Opening } from '@/ui/Opening';
 import { Modals } from '@/ui/Menus';
 
 function useHotkeys() {
@@ -18,7 +19,7 @@ function useHotkeys() {
       if (tag === 'INPUT' || tag === 'TEXTAREA') return;
       if ((e.code === 'Enter' || e.code === 'Space') && target?.closest('button, a[href]')) return;
       const u = ui.get();
-      if (!u.inGame) return;
+      if (!u.inGame || u.opening) return;
       if (e.code === 'Escape' || e.code === 'KeyP') { if (u.modal) closeModal(); else openModal({ type: 'pause' }); return; }
       if (e.repeat) return;
       if (u.modal) {
@@ -49,9 +50,10 @@ function useHotkeys() {
 
 function Loader() {
   const ready = useUI(s => s.ready);
+  const opening = useUI(s => s.opening);
   const [gone, setGone] = useState(false);
   useEffect(() => { if (ready) { const t = setTimeout(() => setGone(true), 700); return () => clearTimeout(t); } return undefined; }, [ready]);
-  if (gone) return null;
+  if (gone || opening) return null;
   return (
     <div className={`fixed inset-0 z-[60] bg-[#293b33] flex flex-col items-center justify-center transition-opacity duration-700 ${ready ? 'opacity-0' : 'opacity-100'}`}>
       <p className="city-wordmark">POTIFY</p>
@@ -83,6 +85,7 @@ function Recovery({ title, body, onRetry }: { title: string; body: string; onRet
 export default function GamePage() {
   useHotkeys();
   const inGame = useUI(s => s.inGame);
+  const opening = useUI(s => s.opening);
   const glLost = useUI(s => s.glLost);
   const muted = useG(s => s.settings.muted);
   const music = useG(s => s.settings.music);
@@ -98,8 +101,8 @@ export default function GamePage() {
   return (
     <div className="fixed inset-0 grain overflow-hidden bg-ink">
       {!crashed && <GameCanvas key={crashKey} onCrash={() => { setCrashed(true); ui.set({ modal: null }); }} />}
-      {inGame ? (<><HUD touch={touch} /><Modals /></>) : <Title />}
-      <Toasts />
+      {inGame ? (opening ? <Opening /> : <><HUD touch={touch} /><Modals /></>) : <Title />}
+      {!opening && <Toasts />}
       <Fade />
       <Loader />
       {crashed && <Recovery title="The rooftop flickered" body="The 3D scene hit a problem. Retry to rebuild it." onRetry={() => { setCrashed(false); setCrashKey(k => k + 1); }} />}

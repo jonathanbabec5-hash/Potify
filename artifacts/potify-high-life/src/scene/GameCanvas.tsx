@@ -1,6 +1,10 @@
+import { followWalking } from '@/game/walkCamera';
 import { DistantSky } from './DistantSky';
 import { Performance } from './Performance';
 import { Tower } from './Tower';
+import { HIGH_CAMERA, highRoofLens } from '@/game/opening';
+import { STOREY } from '@/game/house';
+import { ROOF_BOUNDS } from '@/game/world';
 import { Component, Suspense, useEffect, useMemo, useRef, type ReactNode } from 'react';
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import { KeyboardControls } from '@react-three/drei';
@@ -53,22 +57,7 @@ function Atmosphere({ shadows }: { shadows: boolean }) {
   const mobile = window.matchMedia('(pointer: coarse)').matches;
   const sun = useRef<THREE.DirectionalLight>(null);
   const hemi = useRef<THREE.HemisphereLight>(null);
-  const sunBall = useRef<THREE.Mesh>(null);
-  const moon = useRef<THREE.Mesh>(null);
-  const stars = useRef<THREE.Points>(null);
   const col = useMemo(() => new THREE.Color(), []);
-  const starGeo = useMemo(() => {
-    const g = new THREE.BufferGeometry();
-    const pts: number[] = [];
-    let s = 3;
-    const r = () => { s = (s * 16807) % 2147483647; return s / 2147483647; };
-    for (let i = 0; i < 260; i++) {
-      const a = r() * Math.PI * 2, e = 0.15 + r() * 1.3;
-      pts.push(Math.cos(a) * Math.cos(e) * 90, Math.sin(e) * 90, Math.sin(a) * Math.cos(e) * 90);
-    }
-    g.setAttribute('position', new THREE.Float32BufferAttribute(pts, 3));
-    return g;
-  }, []);
   useEffect(() => {
     scene.fog = new THREE.Fog('#9fdbe2', 34, 95);
     scene.background = new THREE.Color('#9fdbe2');
@@ -101,9 +90,6 @@ function Atmosphere({ shadows }: { shadows: boolean }) {
       hemi.current.intensity = 0.55 + day * 0.6;
       hemi.current.color.copy(col).lerp(tmpA.set('#ffffff'), 0.4);
     }
-    if (sunBall.current) { sunBall.current.position.set(player.x + Math.cos(ang) * 80, el * 70, player.z - 60); sunBall.current.visible = el > -0.1; }
-    if (moon.current) { moon.current.position.set(player.x - Math.cos(ang) * 80, -el * 70, player.z - 60); moon.current.visible = el < 0.1; }
-    if (stars.current) { stars.current.visible = night > 0.01; stars.current.position.set(player.x, 0, player.z); (stars.current.material as THREE.PointsMaterial).opacity = night * 0.9; }
     windowMat.emissiveIntensity = night * 1.3;
     lampMat.emissiveIntensity = 0.2 + night * 2.4;
   });
@@ -111,11 +97,6 @@ function Atmosphere({ shadows }: { shadows: boolean }) {
     <>
       <hemisphereLight ref={hemi} args={['#fff1d6', '#c7774f', 0.9]} />
       <directionalLight ref={sun} castShadow={shadows && (!mobile || area === 'tower' || zone === 'greenhouse')} shadow-mapSize={mobile ? [512,512] : [1024,1024]} shadow-camera-left={-22} shadow-camera-right={22} shadow-camera-top={22} shadow-camera-bottom={-22} shadow-camera-far={90} shadow-bias={-0.0006} shadow-normalBias={0.025} />
-      <mesh ref={sunBall}><icosahedronGeometry args={[5, 1]} /><meshBasicMaterial color="#fff0b8" fog={false} /></mesh>
-      <mesh ref={moon}><icosahedronGeometry args={[3, 1]} /><meshBasicMaterial color="#e8f2ff" fog={false} /></mesh>
-      <points ref={stars} geometry={starGeo}>
-        <pointsMaterial color="#fff7e8" size={0.6} transparent opacity={0} fog={false} />
-      </points>
     </>
   );
 }
@@ -125,6 +106,7 @@ function CameraRig() {
   const cam = useRef(camIdx);
   cam.current = camIdx;
   const canvas = useThree(st => st.gl.domElement);
+  const reduce = useMemo(() => window.matchMedia('(prefers-reduced-motion: reduce)'), []);
   const t = useRef(0);
   const look = useMemo(() => new THREE.Vector3(), []);
   const want = useMemo(() => new THREE.Vector3(), []);
@@ -133,31 +115,40 @@ function CameraRig() {
     let id: number | null = null, x = 0, y = 0;
     const down = (e: PointerEvent) => {
       const state = ui.get();
-      if (!state.inGame || state.modal || id !== null || e.button !== 0) return;
+      if (!state.inGame || state.opening || state.modal || id !== null || e.button !== 0) return;
       id = e.pointerId; x = e.clientX; y = e.clientY;
+      camCtl.dragging = true;
       canvas.setPointerCapture(id);
     };
     const move = (e: PointerEvent) => {
       if (id !== e.pointerId) return;
-      if (ui.get().inGame && !ui.get().modal) {
+      if (ui.get().inGame && !ui.get().opening && !ui.get().modal) {
         camCtl.yawOffset += (e.clientX - x) * 0.007;
+        camCtl.manualUntil = performance.now()+1100;
         camCtl.pitch = THREE.MathUtils.clamp(camCtl.pitch - (e.clientY - y) * 0.005, -1.22, 0.86);
       }
       x = e.clientX; y = e.clientY;
     };
-    const release = (e: PointerEvent) => { if (id === e.pointerId) id = null; };
+    const release = (e: PointerEvent) => { if (id === e.pointerId) { id = null; camCtl.dragging = false; } };
     canvas.addEventListener('pointerdown', down);
     canvas.addEventListener('pointermove', move);
     canvas.addEventListener('lostpointercapture', release);
+    canvas.addEventListener('pointerup', release);
+    canvas.addEventListener('pointercancel', release);
     return () => {
       canvas.removeEventListener('pointerdown', down);
       canvas.removeEventListener('pointermove', move);
       canvas.removeEventListener('lostpointercapture', release);
+      canvas.removeEventListener('pointerup', release);
+      canvas.removeEventListener('pointercancel', release);
+      if(id!==null) camCtl.dragging=false;
     };
   }, [canvas]);
   useFrame((st, raw) => {
     const dt = Math.min(raw, 0.05);
     const u = ui.get(), c = st.camera as THREE.PerspectiveCamera;
+    // Continue rendering the playable viewpoint behind the independent cinematic.
+    // This primes the scene before the player takes the keys.
     const eye = u.inGame && cam.current === 1;
     const fov = eye ? 74 : 50;
     if (c.fov !== fov) { c.fov = fov; c.updateProjectionMatrix(); }
@@ -169,6 +160,9 @@ function CameraRig() {
       c.lookAt(player.x, player.y + 0.8, player.z);
       return;
     }
+    if (!eye && !u.opening && !u.modal && !u.fading && !camCtl.dragging && performance.now()>=camCtl.manualUntil && !reduce.matches) {
+      camCtl.yawOffset = followWalking(camCtl.walk,camCtl.yawOffset,dt);
+    }
     const yaw = camCtl.yawOffset, pitch = camCtl.pitch;
     const dx = Math.sin(yaw), dz = -Math.cos(yaw);
     if (eye) {
@@ -177,10 +171,13 @@ function CameraRig() {
       previous.current = 'eye';
       return;
     }
-    const p = CAMERA_PRESETS[Math.round(cam.current)] ?? CAMERA_PRESETS[0];
+    const p = cam.current === HIGH_CAMERA && u.area === 'tower' ? { d: 5.4, h: 5.1 }
+      : cam.current === HIGH_CAMERA && (u.zone === 'greenhouse' || u.zone === 'apartment') ? { d: 6.2, h: 5.7 }
+      : cam.current === HIGH_CAMERA && u.area === 'roof' ? highRoofLens(player.x,player.z,-dx,-dz,ROOF_BOUNDS)
+      : CAMERA_PRESETS[Math.round(cam.current)] ?? CAMERA_PRESETS[0];
     const marker = u.area + '/' + u.floor + '/' + cam.current;
     const blend = previous.current === marker ? 1 - Math.exp(-dt * 8) : 1;
-    previous.current = marker;
+    previous.current = u.opening ? 'first-light' : marker;
     const angle = THREE.MathUtils.clamp(Math.atan2(p.h - 0.9, p.d) - (pitch + 0.15), 0.12, 1.25);
     const radius = Math.hypot(p.d, p.h - 0.9);
     want.set(player.x - dx * radius * Math.cos(angle), player.y + 0.9 + radius * Math.sin(angle), player.z - dz * radius * Math.cos(angle));
@@ -197,7 +194,7 @@ function GameLoop() {
   useFrame((_, raw) => {
     if (!first.current) { first.current = true; ui.set({ ready: true }); }
     const u = ui.get();
-    if (u.inGame && !u.modal && !u.fading && !document.hidden) game.tick(Math.min(raw, 0.1));
+    if (u.inGame && !u.opening && !u.modal && !u.fading && !document.hidden) game.tick(Math.min(raw, 0.1));
   });
   return null;
 }

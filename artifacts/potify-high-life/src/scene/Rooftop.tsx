@@ -113,7 +113,7 @@ export function Rooftop() {
         {[3.15, 6, 8, 10.85].map(x => [-8.85, -2.15].map(z => (
           <mesh key={`${x}${z}`} position={[x, 1.4, z]} material={mat('#506d58')}><boxGeometry args={[0.16, 2.8, 0.16]} /></mesh>
         )))}
-        <mesh position={[7, 2.75, -2.15]} material={mat('#506d58')}><boxGeometry args={[2.2, 0.2, 0.2]} /></mesh>
+        {!inGh && <mesh position={[7, 2.75, -2.15]} material={mat('#506d58')}><boxGeometry args={[2.2, 0.2, 0.2]} /></mesh>}
         <group position={[STORY_POSITIONS.latch[0], 1.12, STORY_POSITIONS.latch[1]]}>
           <mesh material={mat('#9a6d39', 0.56)}><boxGeometry args={[0.25, 0.28, 0.08]} /></mesh>
           <mesh position={[-0.03, 0.025, 0.06]} rotation-z={Math.PI / 2} material={mat('#e8b35c', 0.42)}><cylinderGeometry args={[0.055, 0.055, 0.33, 8]} /></mesh>
@@ -125,10 +125,10 @@ export function Rooftop() {
           <planeGeometry args={[1.4, 1.0]} />
           <meshStandardMaterial map={signTex('PLANNER', '#c4a869', '#13293a', 256, 128)} />
         </mesh>
-        <mesh position={[7, 2.6, -1.95]}>
+        {!inGh && <mesh position={[7, 2.6, -1.95]}>
           <planeGeometry args={[2.4, 0.5]} />
           <meshBasicMaterial map={signTex('GREENHOUSE', '#506d58', '#fff7e8', 384, 80)} transparent />
-        </mesh>
+        </mesh>}
       </group>
 
       <Beds />

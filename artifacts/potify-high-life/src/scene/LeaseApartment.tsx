@@ -6,6 +6,7 @@ import { printedTexture, SurfaceBlock } from './Surfaces';
 import { SolidSurfaces } from './SolidSurfaces';
 import { foliage } from './Plants';
 import { cropGeometry } from './cropGeometry';
+import { PotPlush } from './PotPlush';
 
 type Vec3 = [number,number,number];
 function Frame({ at, size, color = '#39453e' }: { at: Vec3; size: Vec3; color?: string }) {
@@ -85,7 +86,8 @@ export function LeaseApartment() {
       <mesh position={[-5.24,1.069,-4.91]} material={mat('#545348')}><cylinderGeometry args={[0.16,0.19,0.08,20]}/></mesh>
       <mesh position={[-5.24,1.35,-4.91]} material={mat('#b99a62',0.5)}><cylinderGeometry args={[0.018,0.028,0.55,10]}/></mesh>
       <Frame at={[-5.15,1.625,-4.91]} size={[0.22,0.025,0.026]} color="#ba9c64"/>
-      <mesh position={[-5.04,1.54,-4.91]} material={mat('#3d584b',0.5)}><sphereGeometry args={[0.165,20,8,0,Math.PI*2,0,Math.PI*0.51]}/></mesh>
+      <mesh position={[-5.04,1.54,-4.91]}><sphereGeometry args={[0.165,38,22,0,Math.PI*2,0,Math.PI*0.51]}/><meshStandardMaterial color="#255741" roughness={.32} metalness={.17}/></mesh>
+    <mesh position={[-5.04,1.539,-4.91]} rotation-x={-Math.PI/2}><torusGeometry args={[.163,.006,8,38]}/><meshStandardMaterial color="#aa9362" roughness={.38} metalness={.53}/></mesh>
       <mesh position={[-3.68,1.18,-5.05]} material={mat('#9e6647')}><cylinderGeometry args={[0.16,0.115,0.3,16]}/></mesh>
       <mesh position={[-3.68,1.32,-5.05]} material={mat('#ba8052')}><cylinderGeometry args={[0.178,0.173,0.067,16]}/></mesh>
       <mesh position={[-3.68,1.358,-5.05]} material={mat('#443a2e')}><cylinderGeometry args={[0.151,0.151,0.009,18]}/></mesh>
@@ -95,6 +97,7 @@ export function LeaseApartment() {
     </SolidSurfaces>
     <RoundedBox args={[2.29,0.27,1.49]} radius={0.10} smoothness={2} position={[-7.12,0.68,-4.77]}><meshStandardMaterial map={ticking()} roughness={1}/></RoundedBox>
     <RoundedBox args={[0.53,0.16,1.07]} radius={0.07} smoothness={2} position={[-7.94,0.865,-4.79]} rotation-y={-0.06} material={mat('#dcccae')}/>
+    <PotPlush />
     <mesh rotation-x={-Math.PI/2} rotation-z={-0.09} position={[-4.43,1.049,-4.61]}><planeGeometry args={[0.73,0.49]}/><meshLambertMaterial map={leasePaper()}/></mesh>
     <mesh rotation-x={Math.PI/2} position={[-5.04,1.534,-4.91]}><circleGeometry args={[0.143,20]}/><meshBasicMaterial color="#ffdb93" side={DoubleSide}/></mesh>
     <mesh geometry={sprig} position={[-3.68,1.358,-5.05]} scale={0.76} material={foliage}/>
