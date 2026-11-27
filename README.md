@@ -77,3 +77,14 @@ PROFILE_SECONDS=60 npm run profile:mobile -- --check
 ```
 
 The benchmark walks the mature rooftop, evening greenhouse, floor 24 and market in a fresh offline save for each location. It reports average FPS, 95th-percentile frame time, draw calls and internal image width for a 390 × 844 touch viewport. The check fails if a route averages below 30 FPS. Compare the slow frames too, and repeat on a physical phone to check sustained performance under heat.
+
+On November 27, 2026, a 60-second run per route in headless Chromium 158 with SwiftShader produced the following reference measurements. The build used the Full graphics setting with adaptive resolution. Width is the median internal 3D canvas width in pixels. The touch controls and text render at the browser's display resolution.
+
+| Route | Average FPS | 95th-percentile frame | Median draw calls | Width |
+| --- | ---: | ---: | ---: | ---: |
+| Rooftop with eight mature beds | 53.1 | 33.4 ms | 92 | 265 |
+| Evening greenhouse | 48.4 | 33.4 ms | 53 | 302 |
+| Canopy House, floor 24 | 42.1 | 33.4 ms | 60 | 343 |
+| Market square | 48.0 | 33.4 ms | 52 | 390 |
+
+An 8.8-second comparison route through the rooftop went from 9.1 to 40.2 FPS and from 447 to 87 median draw calls after the changes. Its 95th-percentile frame time went from 216.7 to 50.0 ms. Physical iPhone Safari measurements remain open.
