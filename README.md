@@ -92,3 +92,5 @@ Before the eye-level update on November 27, 2026, a 60-second run per route in h
 An 8.8-second comparison route through the rooftop went from 9.1 to 40.2 FPS and from 447 to 87 median draw calls after the changes. Its 95th-percentile frame time went from 216.7 to 50.0 ms. Physical iPhone Safari measurements remain open.
 
 Run `node scripts/check-resident-reset.mjs` from the game package after building the offline edition to exercise both reset buttons with disposable saves. It covers declined storage removal, retry, the first lease interaction, and resuming the new resident.
+
+The eye-level release at commit `659984a` completed the same one-minute walks on the same software renderer. Apartment 7B averaged 53.2 FPS, the rooftop 48.0, the evening greenhouse 48.8, floor 24 51.8 and the market 51.5. The 95th-percentile frame time was 33.4 ms on each route. Median internal canvas widths ranged from 249 to 333 pixels with the HUD drawn at native display resolution.
