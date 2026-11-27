@@ -33,12 +33,12 @@ export function Rooftop() {
   const inGh = zone === 'greenhouse';
   return (
     <group>
-      <CanalSkyline />
+      <group position-y={-86.4} scale={[1.4,2.15,1.4]}><CanalSkyline /></group>
       <RoofProjects />
       {/* building mass */}
-      <mesh position={[0, -12.2, 1]} material={mat('#c9bba1')}><boxGeometry args={[25, 24, 23]} /></mesh>
-      {Array.from({ length: 5 }).map((_, i) => (
-        <mesh key={i} position={[0, -3 - i * 4.4, 12.55]} material={windowMat}><boxGeometry args={[20, 1.6, 0.1]} /></mesh>
+      <mesh position={[0, -43.4, 1]} material={mat('#c9bba1')}><boxGeometry args={[25, 86.4, 23]} /></mesh>
+      {Array.from({ length: 24 }).map((_, i) => (
+        <mesh key={i} position={[0, -3 - i * 3.6, 12.55]} material={windowMat}><boxGeometry args={[20, 1.6, 0.1]} /></mesh>
       ))}
       <mesh rotation-x={-Math.PI / 2} position={[0, 0, 1]} receiveShadow>
         <planeGeometry args={[24.6, 22.6]} />
@@ -74,7 +74,7 @@ export function Rooftop() {
         )}
         <mesh position={[-7, 2.0, -1.95]}>
           <planeGeometry args={[2.6, 0.6]} />
-          <meshBasicMaterial map={signTex('HOME 7B', '#fff7e8', '#13293a', 256, 64)} transparent />
+          <meshBasicMaterial map={signTex('ROOF LODGE', '#fff7e8', '#13293a', 256, 64)} transparent />
         </mesh>
         {/* furniture */}
         <mesh position={[-9.5, 0.3, -7.8]} material={mat('#90a7a1')} castShadow><boxGeometry args={[2.3, 0.5, 1.7]} /></mesh>
@@ -160,7 +160,7 @@ export function Rooftop() {
       <mesh position={[8.55, 1.1, 10.4]} material={mat('#c4a869')}><icosahedronGeometry args={[0.07, 0]} /></mesh>
       <mesh position={[8.5, 2.55, 9.9]} rotation-y={-Math.PI / 2}>
         <planeGeometry args={[1.8, 0.45]} />
-        <meshBasicMaterial map={signTex('TO TOWN', '#fff7e8', '#13293a', 256, 64)} transparent />
+        <meshBasicMaterial map={signTex('STAIR 24', '#fff7e8', '#13293a', 256, 64)} transparent />
       </mesh>
 
       {/* water tank, bench, pots, antenna */}

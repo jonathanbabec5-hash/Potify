@@ -1,3 +1,6 @@
+import { crossing, stairHeight, STOREY, TOP_FLOOR } from '@/game/house';
+import { TOWER_BOUNDS, towerColliders, towerTargets } from '@/game/towerWorld';
+import { teleport } from '@/game/interact';
 import { useEffect, useMemo, useRef } from 'react';
 import { useFrame } from '@react-three/fiber';
 import { useKeyboardControls } from '@react-three/drei';
@@ -37,17 +40,20 @@ export function Player() {
   const hasGlass = useG(s => s.projects.includes('glasshouse'));
   const hasCart = useG(s => s.projects.includes('cart'));
   const roof = useMemo(() => roofColliders(hasGlass, hasCart), [hasGlass, hasCart]);
+  const floor = useUI(s => s.floor);
+  const archive = useG(s => s.life.archiveOpen);
+  const indoor = useMemo(() => towerColliders(floor,archive), [floor,archive]);
   const lastSave = useRef(0);
   const stepAcc = useRef(0);
 
   useEffect(() => {
     const p = game.getState().position;
-    const area = p.zone === 'town' ? 'town' : 'roof';
-    const cols = area === 'town' ? town : roof;
+    const area = p.zone === 'tower' || p.zone === 'town' ? p.zone : 'roof';
+    const cols = area === 'tower' ? towerColliders(p.floor ?? 7, archive) : area === 'town' ? town : roof;
     const ok = Number.isFinite(p.x) && Number.isFinite(p.z) && !blocked(p.x, p.z, cols);
     player.x = ok ? p.x : area === 'town' ? 80 : 0;
     player.z = ok ? p.z : area === 'town' ? 12 : 4;
-    ui.set({ area, zone: zoneAt(area, player.x, player.z) });
+    ui.set({ area, floor: p.floor ?? 7, zone: zoneAt(area, player.x, player.z) });
   }, []);
 
   useFrame((st, raw) => {
@@ -63,13 +69,26 @@ export function Player() {
     const len = Math.hypot(mx, mz);
     if (len > 1) { mx /= len; mz /= len; }
     const sp = (run ? 7 : 4.4) * Math.min(1, len);
-    const cols = u.area === 'town' ? town : roof;
-    const b = u.area === 'town' ? TOWN_BOUNDS : ROOF_BOUNDS;
+    let level = u.floor;
+    const cols = u.area === 'tower' ? indoor : u.area === 'town' ? town : roof;
+    const b = u.area === 'tower' ? TOWER_BOUNDS : u.area === 'town' ? TOWN_BOUNDS : ROOF_BOUNDS;
     if (len > 0.08) {
       const nx = THREE.MathUtils.clamp(player.x + mx * sp * dt, b.minX, b.maxX);
       if (!blocked(nx, player.z, cols)) player.x = nx;
       const nz = THREE.MathUtils.clamp(player.z + mz * sp * dt, b.minZ, b.maxZ);
-      if (!blocked(player.x, nz, cols)) player.z = nz;
+      if (!blocked(player.x, nz, cols)) {
+        const change = u.area === 'tower' ? crossing(player.x, player.z, nz) : 0;
+        if (level + change > TOP_FLOOR) {
+          teleport('roof', 7.2, 9.9, -Math.PI/2);
+        } else if (level + change >= 1) {
+          player.z = nz;
+          if (change) {
+            level += change;
+            ui.set({ floor: level, prompt: null });
+            game.setPosition({ x: player.x, z: player.z, zone: 'tower', floor: level });
+          }
+        }
+      }
       const target = Math.atan2(mx, mz);
       let d = target - player.yaw;
       d = Math.atan2(Math.sin(d), Math.cos(d));
@@ -79,24 +98,26 @@ export function Player() {
     }
     player.speed = len > 0.08 ? sp : 0;
     speed.current = THREE.MathUtils.lerp(speed.current, player.speed, Math.min(1, dt * 10));
+    player.y = u.area === 'tower' ? (level - 1) * STOREY + stairHeight(player.x,player.z) : 0;
     if (group.current) {
-      group.current.position.set(player.x, 0, player.z);
+      group.current.position.set(player.x, player.y, player.z);
       group.current.rotation.y = player.yaw;
     }
 
     const zone = zoneAt(u.area, player.x, player.z);
-    if (zone !== u.zone) { ui.set({ zone }); game.setPosition({ x: player.x, z: player.z, zone }); }
+    if (zone !== u.zone) { ui.set({ zone }); game.setPosition({ x: player.x, z: player.z, zone, ...(u.area === 'tower' ? {floor:level} : {}) }); }
     const now = st.clock.elapsedTime;
     if (u.inGame && now - lastSave.current > 0.25) {
       lastSave.current = now;
-      game.setPosition({ x: player.x, z: player.z, zone });
+      game.setPosition({ x: player.x, z: player.z, zone, ...(u.area === 'tower' ? {floor:level} : {}) });
     }
 
     // nearest interaction target
     let best: Interactable | null = null;
     let bd = Infinity;
-    for (const t of STATIC_TARGETS) {
-      if (t.area !== u.area || (t.kind === 'freight' && !leased) || (t.kind === 'cart' && !hasCart) ||
+    const targets = u.area === 'tower' ? towerTargets(level,game.getState()) : STATIC_TARGETS;
+    for (const t of targets) {
+      if ((u.area === 'tower' && player.x > 2.75 && player.z < 1) || t.area !== u.area || (t.kind === 'freight' && !leased) || (t.kind === 'cart' && !hasCart) ||
           (t.kind === 'bed' && (t.index ?? 0) >= 6 && !hasGlass)) continue;
       const d = Math.hypot(t.x - player.x, t.z - player.z);
       if (d < t.r && d < bd) { bd = d; best = t; }
@@ -172,6 +193,7 @@ export function NPCs() {
 
 export function PromptMarker() {
   const prompt = useUI(s => s.prompt);
+  const floor = useUI(s => s.floor);
   const r = useRef<THREE.Group>(null);
   useFrame(st => {
     if (!r.current) return;
@@ -183,7 +205,7 @@ export function PromptMarker() {
   if (!prompt) return null;
   const h = prompt.kind === 'npc' ? 2.7 : prompt.kind === 'bed' ? 0.7 : 0.05;
   return (
-    <group ref={r} position={[prompt.x, 0, prompt.z]}>
+    <group ref={r} position={[prompt.x, prompt.area === 'tower' ? (floor-1)*STOREY : 0, prompt.z]}>
       <mesh position={[0, h + 0.03, 0]} rotation-x={-Math.PI / 2}>
         <ringGeometry args={[prompt.kind === 'bed' ? 1.55 : 0.7, prompt.kind === 'bed' ? 1.72 : 0.84, 6]} />
         <meshBasicMaterial color="#fbd255" transparent opacity={0.9} depthWrite={false} />

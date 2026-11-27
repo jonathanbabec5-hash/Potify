@@ -207,7 +207,8 @@ test('first receipt builds either roof project, freight survives reload, and a w
   localStorage.removeItem(SAVE_KEY);
   const { game: g, WAREHOUSE } = await import('../store.ts?canal-projects');
   g.start();
-  assert.equal(g.getState().position.zone, 'apartment');
+  assert.equal(g.getState().position.zone, 'tower');
+  assert.equal(g.getState().position.floor, 7);
   g.buildProject('glasshouse');
   assert.equal(g.getState().plots.length, 6);
   const harvestBeds = count => {
@@ -271,4 +272,81 @@ test('first receipt builds either roof project, freight survives reload, and a w
   assert.deepEqual(tenant.getState().harvest, freight.slice(2));
   tenant.sleep(); tenant.dispatchFreight();
   assert.equal(tenant.getState().harvest.length, 0);
+});
+
+test('Canopy House connects every landing and dates the four neighborhood gatherings', async () => {
+  const { crossing, stairHeight, STOREY, TOP_FLOOR, houseDate, meetingFloor } = await import('../house.ts');
+  let floor = 1;
+  for (let target = 2; target <= TOP_FLOOR + 1; target++) {
+    assert.equal(stairHeight(7, 1), 0);
+    assert.equal(stairHeight(7, -4.5), STOREY / 2);
+    assert.equal(stairHeight(4, -4.5), STOREY / 2);
+    assert.ok(Math.abs(stairHeight(4, 0.99999) - STOREY) < 0.001);
+    floor += crossing(7, 1.1, 0.9) + crossing(4, 0.9, 1.1);
+    assert.equal(floor, target);
+  }
+  for (let target = TOP_FLOOR; target > 0; target--) {
+    floor += crossing(4, 1.1, 0.9) + crossing(7, 0.9, 1.1);
+    assert.equal(floor, target);
+  }
+  for (let i=0;i<4;i++) {
+    const date=houseDate(i*10+4);
+    assert.equal(date.active, true);
+    assert.equal(houseDate(i*10+7).active,false);
+    assert.equal(meetingFloor('tessa',i*10+4,i===1?480:720,null),date.festival.floor);
+  }
+  assert.deepEqual([houseDate(41).season,houseDate(41).date,houseDate(41).year],['Spring',1,2]);
+});
+
+test('neighbors remember a personal scene, shared home and family across multiple years', async () => {
+  localStorage.removeItem(SAVE_KEY);
+  const {game:g}=await import('../store.ts?house-life');
+  const {houseDate,childStage,favorite,meetingFloor}=await import('../house.ts');
+  const visitFloor=level=>g.setPosition({zone:'tower',floor:level,x:-3.8,z:-1.35});
+  g.start(); const childhood='Juniper';
+  for(let day=1;day<=5;day++){
+    visitFloor(meetingFloor('jax',day,g.getState().minute,null));
+    g.visitNeighbor('jax');g.visitNeighbor('jax');
+    assert.equal(g.getState().life.visits.jax,day);
+    if(day===3){
+      assert.equal(g.shareMoment('jax',1),true);assert.equal(g.shareMoment('jax',0),false);
+      assert.equal(g.openArchive(),true);assert.equal(g.openArchive(),false);
+    }
+    if(day<5){assert.equal(g.invitePartner('jax'),false);g.sleep();}
+  }
+  assert.equal(g.invitePartner('jax'),true);
+  visitFloor(7);assert.equal(g.welcomeChild(childhood),false);
+  while(g.getState().day<45){
+    const date=houseDate(g.getState().day);
+    if(date.active && date.date===4){visitFloor(date.festival.floor);assert.equal(g.celebrate(1),true);assert.equal(g.celebrate(0),false);}
+    g.sleep();
+  }
+  visitFloor(21);assert.equal(g.restoreCommons('seeds'),true);assert.equal(g.restoreCommons('tapes'),false);
+  assert.equal(g.takeCommonsSeed(),true);assert.equal(g.takeCommonsSeed(),false);
+  visitFloor(7);assert.equal(g.welcomeChild(childhood),true);assert.equal(g.welcomeChild('Other'),false);
+  assert.equal(g.familyTime('Making'),true);assert.equal(g.familyTime('Music'),false);
+  assert.equal(childStage(45,45),'Little one');
+  const {game:loaded}=await import('../store.ts?home-reload');
+  assert.equal(loaded.getState().life.child.name,childhood);assert.equal(loaded.getState().life.archiveOpen,true);
+  assert.equal(Object.keys(loaded.getState().life.festivals).length,4);
+  assert.equal(loaded.getState().life.moments.jax,1);
+  for(let i=0;i<720;i++)loaded.sleep();
+  assert.equal(childStage(loaded.getState().day,45),'Grown up');
+  assert.equal(favorite(loaded.getState().life.child.interests),'Making');
+  assert.equal(loaded.familyTime('Cooking'),false);
+});
+
+test('pre-tower saves retain their address and a stair save restores the exact floor', async () => {
+  const saved=JSON.parse(localStorage.getItem(SAVE_KEY));
+  delete saved.life;
+  saved.position={zone:'apartment',x:-7.4,z:-4.6};
+  localStorage.setItem(SAVE_KEY,JSON.stringify(saved));
+  const {game:g}=await import('../store.ts?pre-house');
+  assert.deepEqual(g.getState().position,saved.position);
+  assert.deepEqual(g.getState().plots,saved.plots);
+  g.setPosition({zone:'tower',floor:23,x:7,z:-1.3});g.save();
+  const {game:restored}=await import('../store.ts?stair-save');
+  assert.equal(restored.getState().position.floor,23);
+  assert.equal(restored.getState().position.z,-1.3);
+  assert.equal(validateSave({...restored.getState(),position:{zone:'tower',floor:0,x:7,z:2}}),false);
 });

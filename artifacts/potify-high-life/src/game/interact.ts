@@ -3,15 +3,16 @@ import { act, fx, openModal, player, toast, ui, type Area, type Interactable } f
 import { sfx } from '@/game/audio';
 import { zoneAt } from '@/game/world';
 
-export function teleport(area: Area, x: number, z: number, yaw: number) {
+export function teleport(area: Area, x: number, z: number, yaw: number, floor = 1) {
   if (ui.get().fading) return;
   ui.set({ fading: true, prompt: null });
   sfx.door();
   setTimeout(() => {
     player.x = x; player.z = z; player.yaw = yaw;
     const zone = zoneAt(area, x, z);
-    ui.set({ area, zone });
-    game.setPosition({ x, z, zone });
+    ui.set({ area, zone, floor, prompt: null });
+    game.setPosition({ x, z, zone, ...(area === 'tower' ? { floor } : {}) });
+    game.save();
   }, 380);
   setTimeout(() => ui.set({ fading: false }), 820);
 }
@@ -21,8 +22,13 @@ export function interact(t: Interactable | null) {
   if (!t || !u.inGame || u.modal || u.fading) return;
   switch (t.kind) {
     case 'bed': openModal({ type: 'bed', index: t.index ?? 0 }); break;
-    case 'door-down': teleport('town', 80, 13.2, Math.PI); break;
-    case 'door-up': teleport('roof', 7.0, 9.9, -Math.PI / 2); break;
+    case 'door-down': teleport('tower', 0.7, 2.9, Math.PI, 24); break;
+    case 'door-up': teleport('tower', 0.7, 2.9, Math.PI, 1); break;
+    case 'street': teleport('town',80,13.1,Math.PI); break;
+    case 'house': if (t.id === 'house-roof') { teleport('roof',7.2,9.9,-Math.PI/2); break; } if (t.room) openModal({ type: 'house', room: t.room }); break;
+    case 'neighbor':
+      if (t.who) { const line = game.visitNeighbor(t.who); if (line) openModal({ type:'neighbor', who:t.who, line }); }
+      break;
     case 'shop': openModal({ type: 'shop', shop: t.shop! }); break;
     case 'npc': {
       const line = game.talk(t.npc!);

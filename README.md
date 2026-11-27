@@ -14,7 +14,23 @@ This redesign brings the Roof 7B story together with the [first-harvest campaign
 | Rooftop delivery cart | Pack a harvested batch beside the stairs. Carry it downstairs to the café or lab. Each signed delivery pays the market value plus 5 simSOL. |
 | Old Industrial Ward | Walk east of the exchange. With a roof project, 250 traded units and 90 simSOL, lease the canal warehouse. The shutter opens onto a freight bench that takes two batches each day for their combined value plus 12 simSOL. |
 
-The opening illustration comes from the original campaign. The canal, bridges, skyline, warehouse and rooftop additions are rendered in the game world. The larger multi-property city, changing seasons and long-term resident arcs remain development goals in the [public design bible](docs/canon/originals/POTIFY_Master_Key_PUBLIC.txt).
+## Life in Canopy House
+
+Apartment 7B is on the seventh floor. Leave the lease table and head east to the lift, or climb the right-hand stair flight, turn at the window, and take the left flight back to the next hall. Every landing from 1 through 24 is walkable. The last flight opens onto the growing roof. Your position saves mid-climb.
+
+| Floor | What happens there |
+| --- | --- |
+| 1 | Tessa runs the night desk. The front door opens onto Canopy Quarter. |
+| 4 | Neighbors meet in the common kitchen after work and for Autumn Harvest Fest. |
+| 7 | Read the lease, sleep, collect keepsakes and make a home. |
+| 12 | The listening room hosts the Summer Sunrise Jam. A pass from the archive opens the tape booth. |
+| 18 | Find Jax at the repair archive and join the Winter Repair Fair. |
+| 21 | In year two, two festival keepsakes and a trusted friend qualify you to restore the commons. A seed exchange supplies seasonal packets. A tape library lets neighbors listen to two original reels. |
+| 24 | Rowan tends the sky garden. Spring Bloom Fest leaves flowers in the color you chose. The roof is one flight above. |
+
+Each season lasts ten days. Festivals run on days four through six. Outdoor growth changes with the season. The glasshouse holds its pace through winter. Neighbors remember visits on distinct days and decisions in their personal stories. Partnership and parenthood are optional. After a full year together, a household can welcome a child. Shared meals, music and repair projects shape the family album through childhood, adolescence and adulthood.
+
+The opening illustration comes from the original campaign. The interior and skyline render in 3D. The [public design bible](docs/canon/originals/POTIFY_Master_Key_PUBLIC.txt) records the wider city design.
 
 ## Original development and marketing archive
 

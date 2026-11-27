@@ -57,7 +57,7 @@ function Blocks({ items }: { items: Block[] }) {
 
 export function CanalSkyline() {
   const city = useMemo(neighborhood, []);
-  return <group position={[0, -24, 0]}>
+  return <group>
     <mesh rotation-x={-Math.PI / 2} material={mat('#64695c')}><planeGeometry args={[250, 250]} /></mesh>
     <mesh position={[0, 0.09, -24]} rotation-x={-Math.PI / 2} material={mat('#4a686c', 0.28)}><planeGeometry args={[180, 13]} /></mesh>
     {[-30.6, -17.4].map(z => <mesh key={z} position={[0, 0.6, z]} material={mat('#706d61')}><boxGeometry args={[170, 1.25, 0.7]} /></mesh>)}

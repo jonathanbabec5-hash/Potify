@@ -62,7 +62,7 @@ export const TOWN_COLLIDERS: AABB[] = [
 export const CLOSED_WARD_COLLIDERS: AABB[] = [...TOWN_COLLIDERS, [106, 110, -2.15, -1.85]];
 
 export function zoneAt(area: Area, x: number, z: number): ZoneName {
-  if (area === 'town') return 'town';
+  if (area === 'tower' || area === 'town') return area;
   if (x > -11 && x < -3 && z > -9 && z < -2) return 'apartment';
   if (x > 3 && x < 11 && z > -9 && z < -2) return 'greenhouse';
   return 'rooftop';
@@ -73,7 +73,7 @@ export const STATIC_TARGETS: Interactable[] = [
   { id: 'warehouse-lease', kind: 'warehouse-lease', x: 110.9, z: -1.25, r: 1.8, label: 'Warehouse lease', verb: 'Read', area: 'town' },
   { id: 'freight', kind: 'freight', x: 108, z: -8.65, r: 1.9, label: 'Freight bench', verb: 'Dispatch', area: 'town' },
   { id: 'cart', kind: 'cart', ...CART, r: 2, label: 'Delivery cart', verb: 'Pack', area: 'roof' },
-  { id: 'stairs', kind: 'door-down', x: 8.0, z: 9.9, r: 1.7, label: 'Stairwell to town', verb: 'Go down', area: 'roof' },
+  { id: 'stairs', kind: 'door-down', x: 8.0, z: 9.9, r: 1.7, label: 'Canopy House · level 24', verb: 'Enter stairwell', area: 'roof' },
   { id: 'sleep', kind: 'sleep', x: -9.5, z: -6.2, r: 1.5, label: 'Your bed', verb: 'Sleep', area: 'roof' },
   { id: 'wardrobe', kind: 'wardrobe', x: -3.9, z: -7.2, r: 1.4, label: 'Wardrobe', verb: 'Change', area: 'roof' },
   { id: 'radio', kind: 'radio', x: -6, z: -7.4, r: 1.4, label: 'Rooftop radio', verb: 'Toggle', area: 'roof' },
@@ -83,7 +83,7 @@ export const STATIC_TARGETS: Interactable[] = [
   { id: 'ledger', kind: 'story-item', storyItem: 'ledger', x: STORY_POSITIONS.ledger[0], z: STORY_POSITIONS.ledger[1], r: 1.4, label: 'Delivery tag', verb: 'Read', area: 'town' },
   { id: 'rack', kind: 'rack', x: 7, z: -7.1, r: 1.8, label: 'Drying rack', verb: 'Check', area: 'roof' },
   { id: 'planner', kind: 'planner', x: 4.1, z: -4.6, r: 1.4, label: 'Grow planner', verb: 'Read', area: 'roof' },
-  { id: 'home', kind: 'door-up', x: 80, z: 14.2, r: 1.9, label: 'Your building', verb: 'Climb up', area: 'town' },
+  { id: 'home', kind: 'door-up', x: 80, z: 14.2, r: 1.9, label: 'Canopy House · lobby', verb: 'Enter', area: 'town' },
   { id: 'board', kind: 'board', x: 84, z: -2.9, r: 1.5, label: 'Town board', verb: 'Read', area: 'town' },
   ...(Object.entries(SHOPS) as [keyof typeof SHOPS, (typeof SHOPS)[keyof typeof SHOPS]][]).map(([id, s]) => ({
     id: `shop-${id}`, kind: 'shop' as const, x: s.door[0], z: s.door[1], r: 2.0, label: s.name, verb: 'Enter', area: 'town' as Area, shop: id,

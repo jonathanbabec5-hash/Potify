@@ -1,3 +1,4 @@
+import { Tower } from './Tower';
 import { Component, Suspense, useEffect, useMemo, useRef, type ReactNode } from 'react';
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import { KeyboardControls } from '@react-three/drei';
@@ -74,8 +75,8 @@ function Atmosphere({ shadows }: { shadows: boolean }) {
     const night = 1 - day;
     const sx = Math.cos(ang) * 40, sy = Math.max(el, 0.15) * 40;
     if (sun.current) {
-      sun.current.position.set(player.x + sx, sy, player.z + 18);
-      sun.current.target.position.set(player.x, 0, player.z);
+      sun.current.position.set(player.x + sx, player.y + sy, player.z + 18);
+      sun.current.target.position.set(player.x, player.y, player.z);
       sun.current.target.updateMatrixWorld();
       sun.current.intensity = 0.25 + day * 1.9;
       sun.current.color.set(el < 0.3 && day > 0.1 ? '#ffc08a' : day > 0.1 ? '#fff1d6' : '#9fb8ff');
@@ -124,13 +125,13 @@ function CameraRig() {
       return;
     }
     const p = CAMERA_PRESETS[Math.max(0, Math.min(CAMERA_PRESETS.length - 1, Math.round(cam.current)))] ?? CAMERA_PRESETS[1];
-    const indoor = u.zone === 'apartment' || u.zone === 'greenhouse';
+    const indoor = u.area === 'tower' || u.zone === 'apartment' || u.zone === 'greenhouse';
     const d = indoor ? Math.min(p.d, 7) : p.d;
     const h = indoor ? Math.max(p.h, 8.5) : p.h;
-    want.set(player.x, h, player.z + d);
+    want.set(player.x, player.y + h, player.z + d);
     const k = 1 - Math.exp(-dt * 5);
     c.position.lerp(want, k);
-    look.lerp(tmpV.set(player.x, 0.9, player.z - 0.6), k * 1.4 > 1 ? 1 : k * 1.4);
+    look.lerp(tmpV.set(player.x, player.y + 0.9, player.z - 0.6), k * 1.4 > 1 ? 1 : k * 1.4);
     c.lookAt(look);
   });
   return null;
@@ -187,7 +188,7 @@ function World({ shadows }: { shadows: boolean }) {
   return (
     <>
       <Atmosphere shadows={shadows} />
-      {area === 'roof' ? <Rooftop /> : <Town />}
+      {area === 'tower' ? <Tower /> : area === 'roof' ? <Rooftop /> : <Town />}
       <Player />
       <NPCs />
       <PromptMarker />

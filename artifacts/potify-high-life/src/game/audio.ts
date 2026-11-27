@@ -76,6 +76,10 @@ function noise(dur: number, vol: number, freq: number, delay = 0) {
 }
 
 export const sfx = {
+  record: (take: number) => {
+    const notes = take === 0 ? [220, 330, 392, 330, 440, 392, 262, 330] : [294, 370, 440, 494, 440, 370, 330, 294];
+    notes.forEach((note, i) => { tone(note, 0.4, 'triangle', 0.14, undefined, i * 0.3); if (i % 2 === 0) tone(note / 2, 0.5, 'sine', 0.16, undefined, i * 0.3); });
+  },
   step: () => noise(0.06, 0.18, 900 + Math.random() * 500),
   open: () => { tone(520, 0.09, 'square', 0.05); tone(780, 0.12, 'triangle', 0.08, undefined, 0.05); },
   close: () => tone(600, 0.1, 'triangle', 0.07, 380),

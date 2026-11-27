@@ -1,7 +1,8 @@
+import { freshLife, validLife, validFloor, childStage, houseDate, NEIGHBORS, PASTIMES, PEOPLE, meetingFloor, type Neighbor, type Pastime, type HouseLife } from './house.ts';
 import { useSyncExternalStore } from 'react';
 import { chooseStory, freshStory, readStory, validateStory, type ChoiceId, type Resident, type StoryItem, type StoryProgress } from './story.ts';
 
-export type Zone = 'rooftop' | 'town' | 'greenhouse' | 'apartment';
+export type Zone = 'tower' | 'rooftop' | 'town' | 'greenhouse' | 'apartment';
 export interface Plot {
   id: number;
   strain: string | null;
@@ -72,7 +73,8 @@ export interface GameState {
   deliveries: number;
   warehouse: { leased: boolean; lastDispatchDay: number };
   story: StoryProgress;
-  position: { x: number; z: number; zone: Zone };
+  life: HouseLife;
+  position: { x: number; z: number; zone: Zone; floor?: number };
   settings: Settings;
   savedAt: number;
   saveError: string | null;
@@ -113,7 +115,8 @@ function freshState(): GameState {
     lastTalkDay: {},
     quest: { met: false, bought: false, planted: false, watered: false, harvested: false, sold: false, upgraded: false, rewarded: false },
     projects: [], crate: null, deliveries: 0, warehouse: { leased: false, lastDispatchDay: 0 }, story: freshStory(),
-    position: { x: -7.4, z: -4.6, zone: 'apartment' },
+    life: freshLife(),
+    position: { x: -4.4, z: -2.55, zone: 'tower', floor: 7 },
     settings: { muted: false, music: true, camera: 1, quality: 'high' },
     savedAt: 0, saveError: null, totalSold: 0,
   };
@@ -125,7 +128,7 @@ const object = (v: unknown): v is Record<string, unknown> => !!v && typeof v ===
 const validColor = (v: unknown): v is string => typeof v === 'string' && /^#[0-9a-f]{6}$/i.test(v);
 const seedExists = (id: string) => SEEDS.some(s => s.id === id);
 
-type Additions = 'story' | 'projects' | 'crate' | 'deliveries' | 'warehouse';
+type Additions = 'story' | 'projects' | 'crate' | 'deliveries' | 'warehouse' | 'life';
 type SavedGame = Omit<GameState, Additions> & Partial<Pick<GameState, Additions>>;
 function validBatch(h: unknown): h is Harvest {
   return object(h) && typeof h.id === 'string' && typeof h.strain === 'string' && seedExists(h.strain) &&
@@ -158,8 +161,9 @@ export function validateSave(value: unknown): value is SavedGame {
     finite(p.growth, 0, 100) && finite(p.water, 0, 100) && finite(p.health, 0, 100) && typeof p.fed === 'boolean')) return false;
   if (!Array.isArray(s.harvest) || !s.harvest.every(validBatch)) return false;
   if (!Array.isArray(s.upgrades) || !s.upgrades.every(id => typeof id === 'string' && UPGRADES.some(u => u.id === id))) return false;
+  if (s.life !== undefined && !validLife(s.life, s.day)) return false;
   if (!object(s.position) || !finite(s.position.x, -1000, 1000) || !finite(s.position.z, -1000, 1000) ||
-      !['rooftop', 'town', 'greenhouse', 'apartment'].includes(s.position.zone as string)) return false;
+      !(s.position.zone === 'tower' ? validFloor(s.position.floor) : ['rooftop', 'town', 'greenhouse', 'apartment'].includes(s.position.zone as string))) return false;
   if (!object(s.settings) || typeof s.settings.muted !== 'boolean' || typeof s.settings.music !== 'boolean' ||
       !finite(s.settings.camera, 0, 30) || !['low', 'high'].includes(s.settings.quality as string)) return false;
   if (!object(s.friendship) || !Object.values(s.friendship).every(v => finite(v, 0, 100)) ||
@@ -176,7 +180,7 @@ function load(): GameState {
     if (!raw) return initial;
     const parsed: unknown = JSON.parse(raw);
     if (!validateSave(parsed)) return { ...initial, saveError: 'Your saved game could not be read. It has not been overwritten. Reset from settings to start fresh.' };
-    return { ...parsed, warehouse: parsed.warehouse ?? initial.warehouse, projects: parsed.projects ?? [], deliveries: parsed.deliveries ?? 0, crate: parsed.crate ?? null, story: parsed.story ?? initial.story, saveError: null };
+    return { ...parsed, life: parsed.life ?? initial.life, warehouse: parsed.warehouse ?? initial.warehouse, projects: parsed.projects ?? [], deliveries: parsed.deliveries ?? 0, crate: parsed.crate ?? null, story: parsed.story ?? initial.story, saveError: null };
   } catch {
     return { ...initial, saveError: 'Local save storage is unavailable or unreadable. Progress cannot be saved until browser storage is available.' };
   }
@@ -222,6 +226,10 @@ export function formatTime(minute: number): string {
 }
 
 export function objective(s: GameState) {
+  if (s.position.zone === 'tower' && !s.quest.met) {
+    const read = s.story.leaseRead;
+    return { title:read?'Meet Mira on the rooftop':'The key to 7B', description:read?'Walk to the lift at the east end of the hall and choose R for the rooftop beds.':'The paper on the table in Apartment 7B is your lease. Walk up and read it.', step:0,total:8 };
+  }
   const steps = [
     { key: 'met', title: 'A rooftop welcome', description: 'Find Mira and say hello. Press E or the action button near a neighbor.' },
     { key: 'bought', title: 'Seed → Soil → Your story', description: 'Walk to Seed & Signal in town and buy a fictional seed packet.' },
@@ -240,6 +248,8 @@ export function objective(s: GameState) {
 }
 
 function advancePlants(seconds: number) {
+  const season = houseDate(state.day).index;
+  const outdoorRate = [1, 1.12, 0.96, 0.78][season];
   return state.plots.map(plot => {
     if (!plot.strain || plot.growth >= 100) return plot;
     const seed = SEEDS.find(s => s.id === plot.strain);
@@ -249,7 +259,7 @@ function advancePlants(seconds: number) {
     const wetSeconds = Math.min(seconds, plot.water / drainage);
     const drySeconds = seconds - wetSeconds;
     const soilBoost = state.upgrades.includes('soil') ? 1.2 : 1;
-    const growth = clamp(plot.growth + ((wetSeconds + drySeconds * 0.15) / seed.growSeconds) * 100 * soilBoost);
+    const growth = clamp(plot.growth + ((wetSeconds + drySeconds * 0.15) / seed.growSeconds) * 100 * soilBoost * (plot.id < 6 ? outdoorRate : 1));
     const health = clamp(plot.health + wetSeconds * (plot.fed ? 0.12 : 0.06) - drySeconds * 0.14, 10);
     return { ...plot, water, growth, health };
   });
@@ -431,6 +441,71 @@ export const game = {
     commit(next);
     return { message: change.message, reply: change.reply };
   },
+  visitNeighbor(id: Neighbor): string {
+    const { life, position, day, minute } = state;
+    if (!NEIGHBORS.includes(id) || position.zone !== 'tower') return '';
+    if (position.floor !== meetingFloor(id,day,minute,life.partner)) return '';
+    const person = PEOPLE[id];
+    const visits = life.visits[id];
+    if (life.lastVisit[id] !== day) {
+      commit({ ...state, life: { ...life, visits: { ...life.visits, [id]: visits + 1 }, lastVisit: { ...life.lastVisit, [id]: day } } });
+    }
+    return life.partner === id ? person.together : person.lines[Math.min(state.life.visits[id] - 1, 2)];
+  },
+  shareMoment(id: Neighbor, choice: 0 | 1): boolean {
+    const { life, position, minute, day } = state;
+    if (!NEIGHBORS.includes(id) || (choice !== 0 && choice !== 1) || life.visits[id] < 3 || life.lastVisit[id] !== day ||
+        Object.hasOwn(life.moments,id) || position.zone !== 'tower' || position.floor !== meetingFloor(id,day,minute,life.partner)) return false;
+    commit({ ...state, life: { ...life, moments: { ...life.moments, [id]: choice } } });
+    return true;
+  },
+  invitePartner(id: Neighbor): boolean {
+    const { life, day, position, minute } = state;
+    if (!NEIGHBORS.includes(id) || life.partner || life.visits[id] < 5 || !Object.hasOwn(life.moments,id) || life.lastVisit[id] !== day ||
+        position.zone !== 'tower' || position.floor !== meetingFloor(id,day,minute,life.partner)) return false;
+    commit({ ...state, life: { ...life, partner: id, partneredDay: day } });
+    return true;
+  },
+  celebrate(choice: 0 | 1): boolean {
+    const date = houseDate(state.day);
+    if ((choice !== 0 && choice !== 1) || !date.active || state.position.zone !== 'tower' ||
+        state.position.floor !== date.festival.floor || Object.hasOwn(state.life.festivals, date.key)) return false;
+    commit({ ...state, life: { ...state.life, festivals: { ...state.life.festivals, [date.key]: choice } } });
+    return true;
+  },
+  openArchive(): boolean {
+    if (state.position.zone !== 'tower' || state.position.floor !== 18 || state.life.visits.jax < 3 || state.life.archiveOpen) return false;
+    commit({ ...state, life: { ...state.life, archiveOpen: true }, seeds: { ...state.seeds, moonmint: state.seeds.moonmint + 1 } });
+    return true;
+  },
+  restoreCommons(use: 'seeds' | 'tapes'): boolean {
+    const {life,position,day} = state;
+    if ((use !== 'seeds' && use !== 'tapes') || life.commons || position.zone !== 'tower' || position.floor !== 21 ||
+      day < 41 || Object.keys(life.festivals).length < 2 || !NEIGHBORS.some(id=>life.visits[id]>=3)) return false;
+    commit({...state,life:{...life,commons:use}});
+    return true;
+  },
+  takeCommonsSeed(): boolean {
+    const cycle=Math.floor((state.day-1)/10);
+    if (state.position.zone !== 'tower' || state.position.floor !== 21 || state.life.commons!=='seeds' || state.life.seedSeason===cycle) return false;
+    const seed=SEEDS[cycle % SEEDS.length].id;
+    commit({...state,seeds:{...state.seeds,[seed]:state.seeds[seed]+1},life:{...state.life,seedSeason:cycle}});
+    return true;
+  },
+  welcomeChild(rawName: string): boolean {
+    const { position, life, day } = state;
+    const name = rawName.trim().slice(0,24);
+    if (!name || !life.partner || life.child || day < life.partneredDay + 40 || position.zone !== 'tower' || position.floor !== 7) return false;
+    commit({ ...state, life: { ...life, child: { name, arrival: day, lastDay: 0, interests: { Music: 0, Cooking: 0, Making: 0 } } } });
+    return true;
+  },
+  familyTime(pastime: Pastime): boolean {
+    const c = state.life.child;
+    if (!c || c.lastDay === state.day || childStage(state.day, c.arrival) === 'Grown up' || !PASTIMES.includes(pastime) ||
+        state.position.zone !== 'tower' || state.position.floor !== 7) return false;
+    commit({ ...state, life: { ...state.life, child: { ...c, lastDay: state.day, interests: { ...c.interests, [pastime]: c.interests[pastime] + 1 } } } });
+    return true;
+  },
   sleep(): string {
     const plants = advancePlants(60);
     commit({ ...state, plots: plants, day: state.day + 1, minute: 480, elapsed: state.elapsed + 60 });
@@ -450,8 +525,8 @@ export const game = {
   },
   setPosition(position: GameState['position']): void {
     if (!finite(position.x, -1000, 1000) || !finite(position.z, -1000, 1000) ||
-      !['town', 'rooftop', 'greenhouse', 'apartment'].includes(position.zone)) return;
-    if (position.x === state.position.x && position.z === state.position.z && position.zone === state.position.zone) return;
+      !(position.zone === 'tower' ? validFloor(position.floor) : ['town', 'rooftop', 'greenhouse', 'apartment'].includes(position.zone))) return;
+    if (position.x === state.position.x && position.z === state.position.z && position.zone === state.position.zone && position.floor === state.position.floor) return;
     update({ ...state, position: { ...position } });
   },
   tick(deltaSeconds: number): void {

@@ -1,3 +1,5 @@
+import { useG } from '@/game/runtime';
+import { houseDate } from '@/game/house';
 import { useMemo, useRef } from 'react';
 import { useFrame } from '@react-three/fiber';
 import { RoundedBox } from '@react-three/drei';
@@ -113,6 +115,7 @@ function Lamp({ x, z }: { x: number; z: number }) {
 }
 
 export function Town() {
+  const season = useG(s=>houseDate(s.day).index);
   const paving = useMemo(() => tileTex('#f6d9b2', '#efcca0', 8, 10), []);
   const backdrop = useMemo(() => {
     const r = seeded(31);
@@ -146,13 +149,13 @@ export function Town() {
       {(Object.keys(SHOPS) as ShopKey[]).map(id => <Shop key={id} id={id} />)}
       {/* your building, with stair door back to the roof */}
       <group position={[80, 0, 17]}>
-        <mesh position={[0, 9, 0.5]} material={mat('#c9bba1')} castShadow><boxGeometry args={[8, 18, 5]} /></mesh>
+        <mesh position={[0, 43.2, 0.5]} material={mat('#c9bba1')} castShadow><boxGeometry args={[8, 86.4, 5]} /></mesh>
         <mesh position={[0, 1.2, -2.03]} material={mat('#506d58')}><boxGeometry args={[1.6, 2.4, 0.1]} /></mesh>
         <mesh position={[0, 2.9, -2.1]} rotation-y={Math.PI}>
           <planeGeometry args={[3.4, 0.7]} />
-          <meshBasicMaterial map={signTex('HOME  ROOF ACCESS', '#c4a869', '#13293a')} transparent side={THREE.DoubleSide} />
+          <meshBasicMaterial map={signTex('CANOPY HOUSE', '#c4a869', '#13293a')} transparent side={THREE.DoubleSide} />
         </mesh>
-        {[5, 8.5, 12, 15.5].map(y => (
+        {Array.from({length:24},(_,i)=>2.7+i*3.6).map(y => (
           <mesh key={y} position={[0, y, -2.03]} material={windowMat}><boxGeometry args={[6, 1.4, 0.06]} /></mesh>
         ))}
       </group>
@@ -161,7 +164,7 @@ export function Town() {
       {TOWN_TREES.map(([x, z]) => (
         <group key={`${x}${z}`} position={[x, 0, z]}>
           <mesh position={[0, 0.9, 0]} material={mat('#8a5a3b')}><cylinderGeometry args={[0.15, 0.22, 1.8, 5]} /></mesh>
-          <mesh position={[0, 2.4, 0]} material={mat('#f6a46b')} castShadow><icosahedronGeometry args={[1.2, 0]} /></mesh>
+          <mesh position={[0, 2.4, 0]} material={mat(['#9baa74','#6c8866','#c18a58','#b4b6a8'][season])} castShadow><icosahedronGeometry args={[1.2, 0]} /></mesh>
           <mesh position={[0.3, 3.2, 0.1]} material={mat('#886951')}><icosahedronGeometry args={[0.7, 0]} /></mesh>
         </group>
       ))}

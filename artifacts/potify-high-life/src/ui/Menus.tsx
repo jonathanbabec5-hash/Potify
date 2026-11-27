@@ -1,3 +1,5 @@
+import { houseDate } from '@/game/house';
+import { HousePanel, NeighborVisit, TowerDirectory } from './House';
 import { devlogUrl } from '@/game/routes';
 import { useState } from 'react';
 import { BookOpen, Droplets, Heart, Leaf, Lock, Moon, Package, Save, Scissors, Sparkles, Sprout } from 'lucide-react';
@@ -18,6 +20,8 @@ export function Modals() {
   if (!modal) return null;
   switch (modal.type) {
     case 'warehouse-lease': case 'freight': return <WarehouseOffice bench={modal.type === 'freight'} />;
+    case 'house': return <HousePanel room={modal.room}/>;
+    case 'neighbor': return <NeighborVisit key={modal.who} id={modal.who} line={modal.line}/>;
     case 'cart': return <Sheet title="Delivery cart" kicker="Roof 7B freight" accent="bg-jade" test="modal-cart"><Freight /></Sheet>;
     case 'bed': return <BedPanel index={modal.index} />;
     case 'shop': return <ShopPanel shop={modal.shop} />;
@@ -525,14 +529,15 @@ function MapPanel() {
   const steps: [keyof typeof quest | 'project', string][] = [['met', 'Say hello to Mira'], ['bought', 'Buy seeds at Seed & Signal'], ['planted', 'Plant a rooftop bed'], ['watered', 'Water a bed'], ['harvested', 'Harvest a grown plant'], ['sold', 'Sell at Green Exchange'], ['project', 'Commission a roof project'], ['upgraded', 'Buy a Rootworks upgrade']];
   const px = player.x, pz = player.z;
   return (
-    <Sheet title="Map & goals" kicker="No fast travel. Walk, take the stairs, say hi." wide accent="bg-jade" test="modal-map">
+    <Sheet title="Map & goals" kicker="Canopy House and the streets below" wide accent="bg-jade" test="modal-map">
+      {area==='tower' && <TowerDirectory/>}
       <div className="grid md:grid-cols-[1.4fr_1fr] gap-4">
         <div className="grid grid-cols-2 gap-3">
           <MapCard title="Rooftop" here={area === 'roof'}>
             <svg viewBox="-13 -11 26 24" className="w-full">
               <rect x="-12.5" y="-10.5" width="25" height="23" rx="1.5" fill="#f3b38b" stroke="#13293a" strokeWidth=".4" />
               <rect x="-11" y="-9" width="8" height="7" fill="#fbd255" stroke="#13293a" strokeWidth=".3" />
-              <text x="-7" y="-5" fontSize="1.4" textAnchor="middle" fontWeight="900">HOME</text>
+              <text x="-7" y="-5" fontSize="1.4" textAnchor="middle" fontWeight="900">LODGE</text>
               <rect x="3" y="-9" width="8" height="7" fill="#bfeff0" stroke="#13293a" strokeWidth=".3" />
               <text x="7" y="-5" fontSize="1.2" textAnchor="middle" fontWeight="900">GLASS</text>
               {BEDS.slice(0, bedCount).map(b => <rect key={b.index} x={b.x - 1.3} y={b.z - 0.8} width="2.6" height="1.6" fill="#f2703f" stroke="#13293a" strokeWidth=".25" />)}
@@ -552,7 +557,7 @@ function MapPanel() {
               ))}
               <circle cx="80" cy="0" r="2.2" fill="#8fd6e2" stroke="#13293a" strokeWidth=".3" />
               <rect x="76" y="14.4" width="8" height="2" fill="#fff1d6" stroke="#13293a" strokeWidth=".3" />
-              <text x="80" y="15.8" fontSize="1.1" textAnchor="middle" fontWeight="900">HOME</text>
+              <text x="80" y="15.8" fontSize="1.1" textAnchor="middle" fontWeight="900">LODGE</text>
               <rect x="102" y="-11" width="12" height="9" fill="#97664e" stroke="#463d35" strokeWidth=".3" />
               <text x="108" y="-6" fontSize="1.7" textAnchor="middle" fill="white">WAREHOUSE</text>
               {area === 'town' && <circle cx={px} cy={pz} r=".9" fill="#ef6f7c" stroke="#13293a" strokeWidth=".3" />}
@@ -601,10 +606,11 @@ function Calendar() {
   const watered = planted.filter(p => p.water >= 45).length;
   const fed = planted.filter(p => p.fed).length;
   const ready = planted.filter(p => p.growth >= 100).length;
+  const date = houseDate(s.day);
   const weekStart = Math.floor((s.day - 1) / 7) * 7 + 1;
   const names = ['Sprout', 'Mist', 'Root', 'Bloom', 'Market', 'Signal', 'Hush'];
   const routine = [
-    { done: planted.length === 6, text: `Fill your beds (${planted.length}/6 planted)` },
+    { done: planted.length === s.plots.length, text: `Fill your beds (${planted.length}/${s.plots.length} planted)` },
     { done: planted.length > 0 && watered === planted.length, text: `Keep soil damp (${watered}/${planted.length} hydrated)` },
     { done: planted.length > 0 && fed === planted.length, text: `Nourish with soil (${fed}/${planted.length})` },
     { done: ready === 0, text: ready ? `${ready} bed(s) ready to harvest` : 'Nothing waiting to harvest' },
@@ -613,6 +619,8 @@ function Calendar() {
   ];
   return (
     <Sheet title={`Day ${s.day}`} kicker={`${formatTime(s.minute)} · 8-minute days`} accent="bg-aqua" test="modal-calendar">
+      <p className="mb-3 font-display text-xl">{date.season} {date.date} · Year {date.year}</p>
+      <p className="mb-3">{date.festival.title} · {date.season} 4–6 · Level {date.festival.floor}{date.active ? " · Happening today" : ""}. Neighbors gather {date.index===1?"6–10 AM":"10 AM–2 PM"}.</p>
       <div className="grid grid-cols-7 gap-1.5">
         {names.map((n, i) => {
           const d = weekStart + i;
@@ -625,6 +633,7 @@ function Calendar() {
           );
         })}
       </div>
+      <p className="mt-3 text-sm">Outdoor beds grow fastest in summer and slow down in winter. The glasshouse extension keeps a steady pace all year.</p>
       <p className="font-display text-lg mt-4">Today’s routine</p>
       <ul className="grid gap-1.5 mt-1">
         {routine.map((r, i) => (

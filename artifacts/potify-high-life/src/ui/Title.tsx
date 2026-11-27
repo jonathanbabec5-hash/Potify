@@ -3,7 +3,7 @@ import campaignArt from '../../../../docs/marketing/assets/2026-11-08-potify-cit
 import { useState } from 'react';
 import { ArrowRight, Check, Play, RotateCcw, Sprout } from 'lucide-react';
 import { game } from '@/game/store';
-import { act, ui, useG } from '@/game/runtime';
+import { act, player, ui, useG } from '@/game/runtime';
 import { sfx, unlockAudio } from '@/game/audio';
 import { SHIRTS, SKINS, Swatches, AvatarFigure } from '@/ui/common';
 
@@ -17,7 +17,12 @@ export function Title() {
   const [skin, setSkin] = useState(saved.skin || SKINS[1]);
   const [ack, setAck] = useState(false);
 
-  const enter = () => { unlockAudio(); sfx.harvest(); ui.set({ inGame: true }); };
+  const enter = () => {
+    const { x, z, zone, floor } = game.getState().position;
+    player.x=x; player.z=z;
+    unlockAudio(); sfx.harvest();
+    ui.set({ inGame:true, modal:null, prompt:null, area:zone==='tower'||zone==='town'?zone:'roof', zone, floor:floor??7 });
+  };
   const cont = () => { unlockAudio(); if (started && acknowledged) enter(); else { setStep('create'); sfx.open(); } };
   const begin = () => {
     if (!ack) return;
@@ -31,11 +36,11 @@ export function Title() {
       <div className="absolute inset-x-0 bottom-0 h-1/3 bg-gradient-to-t from-[#13293a]/60 to-transparent" />
       <div className="relative flex-1 flex flex-col md:flex-row items-center md:items-stretch gap-6 p-5 md:p-12 overflow-auto pointer-events-auto">
         <div className="flex flex-col justify-center md:max-w-xl text-center md:text-left pt-6 md:pt-0">
-          <p className="font-black uppercase tracking-[0.3em] text-butter text-xs md:text-sm">Canopy Quarter · Roof 7B</p>
+          <p className="font-black uppercase tracking-[0.3em] text-butter text-xs md:text-sm">Canopy House · Apartment 7B</p>
           <h1 className="city-wordmark leading-[0.85] mt-3" data-testid="text-title">POTIFY</h1>
           <p className="font-display text-cream text-2xl md:text-4xl mt-5 [text-shadow:0_3px_0_#13293a]">A Wonderful High Life</p>
           <p className="text-cream/85 font-bold mt-4 max-w-md mx-auto md:mx-0 text-sm md:text-base">
-            Your lease is on the kitchen table. Downstairs, Mira remembers who tended this roof before you. What you build here begins with the first crate you carry to market.
+            Your lease is on the table in 7B. Twenty-four floors, a garden on the roof, and a whole building learning your name. Come home in time for supper.
           </p>
         </div>
 

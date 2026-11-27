@@ -4,20 +4,24 @@ import { sfx } from '@/game/audio';
 import type { Resident, StoryItem, StoryPage } from '@/game/story';
 
 export type GS = ReturnType<typeof game.getState>;
-export type Area = 'roof' | 'town';
-export type ZoneName = 'rooftop' | 'town' | 'greenhouse' | 'apartment';
+import type { Neighbor } from './house';
+
+export type Area = 'tower' | 'roof' | 'town';
+export type ZoneName = 'tower' | 'rooftop' | 'town' | 'greenhouse' | 'apartment';
 export type ShopId = 'seed' | 'rootworks' | 'exchange' | 'lab' | 'cafe';
 export type NpcId = Resident;
 
 export type Modal =
   | null
   | { type: 'pause' | 'inventory' | 'avatar' | 'map' | 'calendar' | 'settings' | 'roadmap' | 'sleep' | 'field-notes' | 'cart' | 'warehouse-lease' | 'freight' }
+  | { type: 'house'; room: 'lift' | 'album' | 'festival' | 'archive' | 'record' | 'doors' | 'commons' }
+  | { type: 'neighbor'; who: Neighbor; line: string }
   | { type: 'bed'; index: number }
   | { type: 'shop'; shop: ShopId }
   | { type: 'talk'; npc: NpcId; line: string }
   | { type: 'story-page'; page: StoryPage; fromNotes?: boolean };
 
-export type InteractKind = 'warehouse-lease' | 'freight' | 'cart' | 'bed' | 'door-down' | 'door-up' | 'shop' | 'npc' | 'sleep' | 'wardrobe' | 'radio' | 'rack' | 'planner' | 'board' | 'story-item';
+export type InteractKind = 'house' | 'street' | 'neighbor' | 'warehouse-lease' | 'freight' | 'cart' | 'bed' | 'door-down' | 'door-up' | 'shop' | 'npc' | 'sleep' | 'wardrobe' | 'radio' | 'rack' | 'planner' | 'board' | 'story-item';
 
 export interface Interactable {
   id: string;
@@ -32,6 +36,8 @@ export interface Interactable {
   shop?: ShopId;
   npc?: NpcId;
   storyItem?: StoryItem;
+  room?: Extract<Modal, {type:'house'}>['room'];
+  who?: Neighbor;
 }
 
 export interface Toast { id: number; text: string; tone: 'good' | 'bad' }
@@ -45,12 +51,13 @@ interface UIState {
   ready: boolean;
   glLost: boolean;
   area: Area;
+  floor: number;
   zone: ZoneName;
 }
 
 let uiState: UIState = {
   inGame: false, modal: null, prompt: null, toasts: [], fading: false, ready: false, glLost: false,
-  area: 'roof', zone: 'rooftop',
+  area: 'roof', zone: 'rooftop', floor: 7,
 };
 const uiListeners = new Set<() => void>();
 export const ui = {
@@ -98,7 +105,7 @@ export function act(fn: () => unknown, quiet = false): boolean {
   return true;
 }
 
-export const player = { x: 0, z: 4, yaw: Math.PI, speed: 0 };
+export const player = { y: 0, x: 0, z: 4, yaw: Math.PI, speed: 0 };
 export const joy = { x: 0, y: 0 };
 export const npcPos: Record<NpcId, { x: number; z: number; yaw: number; speed: number; area: Area }> = {
   mira: { x: 2.5, z: 2, yaw: 0, speed: 0, area: 'roof' },

@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { Backpack, BookOpen, CalendarDays, Map as MapIcon, Menu, Moon, Shirt, Sun, Volume2, VolumeX, ZoomIn, ZoomOut, ChevronDown } from 'lucide-react';
+import { floorName, houseDate } from '@/game/house';
 import { game, objective, formatTime } from '@/game/store';
 import { joy, openModal, ui, useG, useUI, type Modal } from '@/game/runtime';
 import { interact } from '@/game/interact';
@@ -10,7 +11,8 @@ import { Kbd, Sim } from '@/ui/common';
 const ZONE_TITLES: Record<string, [string, string]> = {
   rooftop: ['The Rooftop', 'Canal overlook'],
   greenhouse: ['The Greenhouse', 'Glass, warmth, drying rack'],
-  apartment: ['Home 7B', 'Bed, wardrobe, radio'],
+  tower: ['Canopy House', 'West stair and passenger lift'],
+  apartment: ['Caretaker’s lodge', 'Bed, wardrobe, radio'],
   town: ['Canopy Quarter', 'Shops, square and neighbors'],
 };
 
@@ -39,6 +41,8 @@ export function HUD({ touch }: { touch: boolean }) {
   const showNotes = useG(s => s.quest.met || s.story.leaseRead);
   const prompt = useUI(s => s.prompt);
   const zone = useUI(s => s.zone);
+  const floor = useUI(s => s.floor);
+  const date = houseDate(day);
   const [objOpen, setObjOpen] = useState(!touch);
   const [banner, setBanner] = useState(zone);
   const [bannerKey, setBannerKey] = useState(0);
@@ -58,7 +62,7 @@ export function HUD({ touch }: { touch: boolean }) {
             <div className="leading-none">
               <p className="font-display text-lg">{formatTime(minute)}</p>
               <div className="flex items-center gap-1.5 mt-0.5">
-                <span className="text-[10px] font-black uppercase tracking-wider text-muted-foreground">Day {day}</span>
+                <span className="text-[10px] font-black uppercase tracking-wider text-muted-foreground">{date.season} {date.date} · Y{date.year}</span>
                 <span className="w-12 h-1.5 rounded-full bg-ink/15 overflow-hidden"><span className="block h-full bg-tangerine" style={{ width: `${dayPct * 100}%` }} /></span>
               </div>
             </div>
@@ -68,6 +72,7 @@ export function HUD({ touch }: { touch: boolean }) {
             <span className="font-display text-lg leading-none"><Sim v={money} /></span>
           </div>
         </div>
+        {zone === 'tower' && <span data-testid="house-floor" className="chip w-fit px-3 py-1 text-xs font-bold">Canopy House · {floor} · {floorName(floor)}</span>}
         <button onClick={() => { sfx.click(); setObjOpen(o => !o); }} className="panel !rounded-2xl text-left px-3.5 py-2.5 !shadow-[0_4px_0_#13293a]" data-testid="card-objective">
           <div className="flex items-center gap-2">
             <span className="text-[10px] font-black uppercase tracking-[0.18em] text-jade">Next up · {Math.min(obj.step + 1, obj.total)}/{obj.total}</span>
