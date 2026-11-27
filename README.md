@@ -40,6 +40,8 @@ Each season lasts ten days. Festivals run on days four through six. Outdoor grow
 
 The opening illustration comes from the original campaign. The interior and skyline render in 3D. The [public design bible](docs/canon/originals/POTIFY_Master_Key_PUBLIC.txt) records the wider city design.
 
+[Writing for POTIFY City](docs/STORY-AND-WORLD.md) covers the residents, the Chronicles and how to review a new in-world story beat.
+
 ## Original development and marketing archive
 
 [Open the original marketing and design archive](docs/marketing/ORIGINALS.md) for the November 4 X and vertical story images, the November 8 campaign copy and artwork, and the original public game bible. The [public Master Key PDF](docs/canon/originals/POTIFY_Master_Key_PUBLIC.pdf) preserves the November 4 layout. A [text extraction](docs/canon/2026-11-04-public-master-key-extracted.txt) is also available.
