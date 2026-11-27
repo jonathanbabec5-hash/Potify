@@ -160,7 +160,7 @@ function TouchControls({ showCamera }: { showCamera: boolean }) {
   const end = () => { pid.current = null; setKnob({ x: 0, y: 0 }); joy.x = 0; joy.y = 0; };
   return (
     <>
-      <div ref={base} className="absolute bottom-6 left-5 w-36 h-36 rounded-full border-[3px] border-ink bg-cream/50 backdrop-blur-sm pointer-events-auto touch-none"
+      <div ref={base} className="absolute bottom-6 left-5 w-36 h-36 rounded-full border-[3px] border-ink bg-cream/50 pointer-events-auto touch-none"
         onPointerDown={e => { pid.current = e.pointerId; (e.target as HTMLElement).setPointerCapture(e.pointerId); move(e); }}
         onPointerMove={move} onPointerUp={end} onPointerCancel={end} data-testid="joystick">
         <div className="absolute left-1/2 top-1/2 w-14 h-14 -ml-7 -mt-7 rounded-full bg-tangerine border-[3px] border-ink shadow-[0_4px_0_#13293a]"

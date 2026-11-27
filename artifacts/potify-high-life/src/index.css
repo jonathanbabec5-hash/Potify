@@ -460,3 +460,5 @@ body{-webkit-tap-highlight-color:transparent;touch-action:manipulation}
 .grain::after{content:'';position:fixed;inset:0;pointer-events:none;opacity:.07;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence baseFrequency='.9'/%3E%3C/filter%3E%3Crect width='120' height='120' filter='url(%23n)'/%3E%3C/svg%3E")}
 
 .city-wordmark { font-family: Georgia, serif; font-weight: 700; font-size: clamp(4rem, 11vw, 9rem); letter-spacing: -.065em; color: #f4e3bd; text-shadow: 0 3px 16px #18211d; }
+
+@media (pointer: coarse) { .grain::after { display: none; } }

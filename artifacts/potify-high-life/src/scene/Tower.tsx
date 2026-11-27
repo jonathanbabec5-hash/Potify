@@ -1,4 +1,5 @@
-import { useMemo, useRef } from 'react';
+import { SolidSurfaces } from './SolidSurfaces';
+import { useEffect, useMemo, useRef } from 'react';
 import { CanvasTexture, DoubleSide, RepeatWrapping, SRGBColorSpace } from 'three';
 import { useTexture } from '@react-three/drei';
 import housePrint from '../../../../docs/marketing/assets/2026-11-08-potify-city-concept.jpg';
@@ -72,10 +73,11 @@ function Floorboards() {
     t.colorSpace = SRGBColorSpace;
     return t;
   }, []);
+  useEffect(() => () => wood.dispose(), [wood]);
   return (
     <mesh position={[-3.04, 0.009, -0.15]} rotation-x={-Math.PI / 2} receiveShadow>
       <planeGeometry args={[11.38, 11.58]} />
-      <meshStandardMaterial map={wood} roughness={0.85} />
+      <meshLambertMaterial map={wood} />
     </mesh>
   );
 }
@@ -121,7 +123,7 @@ function Stairwell() {
     steps = 10,
     half = STOREY / 2;
   return (
-    <group>
+    <SolidSurfaces>
       {[false, true].map((left) => (
         <group key={String(left)}>
           {Array.from({ length: steps }, (_, i) => {
@@ -165,7 +167,7 @@ function Stairwell() {
       ))}
       <Box at={[5.52, half - 0.12, -4.82]} size={[5.9, 0.24, 2.37]} color="#918675" />
       <Box at={[4.1, STOREY - 0.12, 1.55]} size={[2.65, 0.24, 1.1]} color="#827767" />
-    </group>
+    </SolidSurfaces>
   );
 }
 function Doors({ floor }: { floor: number }) {

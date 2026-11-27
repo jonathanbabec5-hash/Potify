@@ -65,3 +65,15 @@ PORT=5173 BASE_PATH=/ pnpm --filter @workspace/potify-high-life build
 ```
 
 The client build is written to `artifacts/potify-high-life/dist/public`. No external wallet is required to play the baseline game.
+
+## Mobile frame budget
+
+The gameplay target is 30 frames per second. On your phone, walk through the area you want to check, then open **Pause → Settings**. The last active play sample shows average FPS and the 95th-percentile frame time. At 30 FPS the frame budget is 33.3 ms. Sampling restarts after a menu, a zone change, or switching apps.
+
+To compare art changes on the same machine, build the downloadable edition and run the following from `artifacts/potify-high-life` with Node 24, Playwright and its Chromium installed. If Playwright is installed separately, set `PLAYWRIGHT_MODULE` to its module path.
+
+```sh
+PROFILE_SECONDS=60 npm run profile:mobile -- --check
+```
+
+The benchmark walks the mature rooftop, evening greenhouse, floor 24 and market in a fresh offline save for each location. It reports average FPS, 95th-percentile frame time, draw calls and internal image width for a 390 × 844 touch viewport. The check fails if a route averages below 30 FPS. Compare the slow frames too, and repeat on a physical phone to check sustained performance under heat.

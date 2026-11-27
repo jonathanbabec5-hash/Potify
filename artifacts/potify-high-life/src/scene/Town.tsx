@@ -1,3 +1,4 @@
+import { SolidSurfaces } from './SolidSurfaces';
 import { useG } from '@/game/runtime';
 import { houseDate } from '@/game/house';
 import { useMemo, useRef } from 'react';
@@ -28,6 +29,7 @@ function Shop({ id }: { id: ShopKey }) {
           <coneGeometry args={[Math.max(w, d) * 0.72, 1.6, 4]} />
         </mesh>
       )}
+      <SolidSurfaces>
       {/* door + awning */}
       <mesh position={[0, 1.1, d / 2 + 0.02]} material={mat('#13293a')}><boxGeometry args={[1.4, 2.2, 0.1]} /></mesh>
       <mesh position={[0.45, 1.1, d / 2 + 0.1]} material={lampMat}><icosahedronGeometry args={[0.07, 0]} /></mesh>
@@ -43,6 +45,7 @@ function Shop({ id }: { id: ShopKey }) {
         <planeGeometry args={[w * 0.85, 0.85]} />
         <meshBasicMaterial map={signTex(s.name.toUpperCase(), '#fff7e8', '#13293a')} transparent />
       </mesh>
+      </SolidSurfaces>
       {id === 'seed' && <SignalMast h={h} />}
       {id === 'rootworks' && (
         <>
@@ -161,6 +164,7 @@ export function Town() {
       </group>
       <Warehouse />
       <Fountain />
+      <SolidSurfaces revision={String(season)}>
       {TOWN_TREES.map(([x, z]) => (
         <group key={`${x}${z}`} position={[x, 0, z]}>
           <mesh position={[0, 0.9, 0]} material={mat('#8a5a3b')}><cylinderGeometry args={[0.15, 0.22, 1.8, 5]} /></mesh>
@@ -189,6 +193,7 @@ export function Town() {
         ))}
       </group>
       {[[66, -1], [94, -1], [74, 10], [86, 10], [74, -6], [86, -6]].map(([x, z]) => <Lamp key={`${x}${z}`} x={x} z={z} />)}
+      </SolidSurfaces>
     </group>
   );
 }

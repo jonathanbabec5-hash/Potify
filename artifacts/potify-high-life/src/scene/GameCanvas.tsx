@@ -1,3 +1,4 @@
+import { Performance } from './Performance';
 import { Tower } from './Tower';
 import { Component, Suspense, useEffect, useMemo, useRef, type ReactNode } from 'react';
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
@@ -87,7 +88,7 @@ function Atmosphere({ shadows }: { shadows: boolean }) {
     }
     if (sunBall.current) { sunBall.current.position.set(player.x + Math.cos(ang) * 80, el * 70, player.z - 60); sunBall.current.visible = el > -0.1; }
     if (moon.current) { moon.current.position.set(player.x - Math.cos(ang) * 80, -el * 70, player.z - 60); moon.current.visible = el < 0.1; }
-    if (stars.current) { stars.current.position.set(player.x, 0, player.z); (stars.current.material as THREE.PointsMaterial).opacity = night * 0.9; }
+    if (stars.current) { stars.current.visible = night > 0.01; stars.current.position.set(player.x, 0, player.z); (stars.current.material as THREE.PointsMaterial).opacity = night * 0.9; }
     windowMat.emissiveIntensity = night * 1.3;
     lampMat.emissiveIntensity = 0.2 + night * 2.4;
   });
@@ -155,23 +156,26 @@ function FX() {
   const c = useMemo(() => new THREE.Color(), []);
   useEffect(() => {
     if (!ref.current) return;
-    for (let i = 0; i < MAX_P; i++) { ref.current.setColorAt(i, c.set('#ffffff')); m.makeScale(0, 0, 0); ref.current.setMatrixAt(i, m); }
-  }, [c, m]);
+    ref.current.count = 0;
+  }, []);
   useFrame((_, raw) => {
     const dt = Math.min(raw, 0.05);
     const im = ref.current;
-    if (!im) return;
+    if (!im || (!im.count && !fx.pending.length && !fx.parts.length)) return;
     while (fx.pending.length) { fx.parts.push(fx.pending.shift()!); if (fx.parts.length > MAX_P) fx.parts.shift(); }
-    fx.parts = fx.parts.filter(p => (p.life -= dt * 1.2) > 0);
-    for (let i = 0; i < MAX_P; i++) {
-      const p = fx.parts[i];
-      if (!p) { m.makeScale(0, 0, 0); im.setMatrixAt(i, m); continue; }
+    let count = 0;
+    for (const p of fx.parts) {
+      p.life -= dt * 1.2;
+      if (p.life <= 0) continue;
       p.vy -= 12 * dt; p.x += p.vx * dt; p.y = Math.max(0.1, p.y + p.vy * dt); p.z += p.vz * dt;
-      const s = 0.16 * p.life;
-      m.makeScale(s, s, s).setPosition(p.x, p.y, p.z);
-      im.setMatrixAt(i, m);
-      im.setColorAt(i, c.set(p.color));
+      const size = 0.16 * p.life;
+      m.makeScale(size, size, size).setPosition(p.x, p.y, p.z);
+      im.setMatrixAt(count, m);
+      im.setColorAt(count, c.set(p.color));
+      fx.parts[count++] = p;
     }
+    fx.parts.length = im.count = count;
+    im.visible = count > 0;
     im.instanceMatrix.needsUpdate = true;
     if (im.instanceColor) im.instanceColor.needsUpdate = true;
   });
@@ -216,7 +220,8 @@ export function hasWebGL() {
 export default function GameCanvas({ onCrash }: { onCrash: () => void }) {
   const quality = useG(s => s.settings.quality);
   const mobile = typeof window !== 'undefined' && window.matchMedia('(pointer: coarse)').matches;
-  const maxDpr = quality === 'high' ? (mobile ? 1.5 : 2) : 1;
+  const maxDpr = Math.min(window.devicePixelRatio || 1, quality === 'high' ? (mobile ? 1.35 : 2) : 1);
+  const initialDpr = mobile ? Math.min(maxDpr, quality === 'high' ? 1 : 0.85) : maxDpr;
   const shadows = quality === 'high' && !mobile;
   return (
     <CanvasBoundary onError={onCrash}>
@@ -224,8 +229,8 @@ export default function GameCanvas({ onCrash }: { onCrash: () => void }) {
         <Canvas
           key={quality}
           shadows={shadows}
-          dpr={[1, maxDpr]}
-          gl={{ antialias: quality === 'high', powerPreference: 'high-performance' }}
+          dpr={initialDpr}
+          gl={{ alpha: false, antialias: !mobile && quality === 'high', powerPreference: 'high-performance' }}
           camera={{ fov: 45, near: 0.1, far: 220, position: [18, 12, 18] }}
           onCreated={({ gl }) => {
             gl.domElement.addEventListener('webglcontextlost', e => { e.preventDefault(); ui.set({ glLost: true }); });
@@ -235,6 +240,7 @@ export default function GameCanvas({ onCrash }: { onCrash: () => void }) {
         >
           <Suspense fallback={null}>
             <World shadows={shadows} />
+            <Performance mobile={mobile} ceiling={maxDpr} />
           </Suspense>
         </Canvas>
       </KeyboardControls>

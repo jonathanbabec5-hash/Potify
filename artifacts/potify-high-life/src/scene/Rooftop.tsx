@@ -1,4 +1,7 @@
-import { useMemo } from 'react';
+import { Matrix4, InstancedMesh } from 'three';
+import { WorkshopBench } from './WorkshopBench';
+import { SolidSurfaces } from './SolidSurfaces';
+import { useEffect, useLayoutEffect, useMemo, useRef } from 'react';
 import { RoundedBox } from '@react-three/drei';
 import { useUI } from '@/game/runtime';
 import { STORY_POSITIONS } from '@/game/world';
@@ -8,20 +11,21 @@ import { Beds } from '@/scene/Plants';
 import { CanalSkyline } from './CanalSkyline';
 import { RoofProjects } from './RoofProjects';
 
-function StringLights({ from, to, n = 9 }: { from: [number, number, number]; to: [number, number, number]; n?: number }) {
-  return (
-    <>
-      {Array.from({ length: n }).map((_, i) => {
-        const t = i / (n - 1);
-        const sag = Math.sin(t * Math.PI) * 0.5;
-        return (
-          <mesh key={i} position={[from[0] + (to[0] - from[0]) * t, from[1] + (to[1] - from[1]) * t - sag, from[2] + (to[2] - from[2]) * t]} material={lampMat}>
-            <icosahedronGeometry args={[0.09, 0]} />
-          </mesh>
-        );
-      })}
-    </>
-  );
+function StringLights() {
+  const ref = useRef<InstancedMesh>(null);
+  useLayoutEffect(() => {
+    const mesh = ref.current!, transform = new Matrix4();
+    let index = 0;
+    for (const [x1,z1,x2,z2,count] of [[-6,5.2,6,5.2,11],[-6,11.4,6,11.4,11],[-6,5.2,-6,11.4,6]]) {
+      for (let i = 0; i < count; i++) {
+        const t = i/(count-1);
+        mesh.setMatrixAt(index++, transform.makeTranslation(x1+(x2-x1)*t,2.8-Math.sin(t*Math.PI)*0.5,z1+(z2-z1)*t));
+      }
+    }
+    mesh.instanceMatrix.needsUpdate = true;
+    mesh.computeBoundingSphere();
+  }, []);
+  return <instancedMesh ref={ref} args={[undefined, lampMat, 28]}><icosahedronGeometry args={[0.09,0]} /></instancedMesh>;
 }
 
 export function Rooftop() {
@@ -29,6 +33,7 @@ export function Rooftop() {
   const floor = useMemo(() => tileTex('#968778', '#8e8171', 8, 6), []);
   const ghFloor = useMemo(() => tileTex('#cfe9d8', '#b9dcc6', 6, 2), []);
   const aptFloor = useMemo(() => tileTex('#e9c79a', '#ddb788', 4, 3), []);
+  useEffect(() => () => { floor.dispose(); ghFloor.dispose(); aptFloor.dispose(); }, [floor, ghFloor, aptFloor]);
   const inApt = zone === 'apartment';
   const inGh = zone === 'greenhouse';
   return (
@@ -42,7 +47,7 @@ export function Rooftop() {
       ))}
       <mesh rotation-x={-Math.PI / 2} position={[0, 0, 1]} receiveShadow>
         <planeGeometry args={[24.6, 22.6]} />
-        <meshStandardMaterial map={floor} roughness={0.9} />
+        <meshLambertMaterial map={floor} />
       </mesh>
       {/* parapet */}
       {[[0, -10.2, 25, 0.5], [0, 12.2, 25, 0.5]].map(([x, z, w, d], i) => (
@@ -56,7 +61,7 @@ export function Rooftop() {
       <group>
         <mesh rotation-x={-Math.PI / 2} position={[-7, 0.02, -5.5]} receiveShadow>
           <planeGeometry args={[7.6, 6.6]} />
-          <meshStandardMaterial map={aptFloor} />
+          <meshLambertMaterial map={aptFloor} />
         </mesh>
         <mesh position={[-7, 1.3, -8.85]} material={mat('#c4a869')}><boxGeometry args={[8, 2.6, 0.3]} /></mesh>
         <mesh position={[-10.85, 1.3, -5.5]} material={mat('#c4a869')}><boxGeometry args={[0.3, 2.6, 7]} /></mesh>
@@ -102,7 +107,7 @@ export function Rooftop() {
       <group>
         <mesh rotation-x={-Math.PI / 2} position={[7, 0.02, -5.5]} receiveShadow>
           <planeGeometry args={[7.6, 6.6]} />
-          <meshStandardMaterial map={ghFloor} />
+          <meshLambertMaterial map={ghFloor} />
         </mesh>
         {[[7, -8.85, 8, 0.3], [3.15, -5.5, 0.3, 7], [10.85, -5.5, 0.3, 7], [4.5, -2.15, 3, 0.3], [9.5, -2.15, 3, 0.3]].map(([x, z, w, d], i) => (
           <group key={i}>
@@ -126,10 +131,7 @@ export function Rooftop() {
         )}
         <mesh position={[7, 3.3, -5.5]} material={mat('#506d58')}><boxGeometry args={[8, 0.12, 0.12]} /></mesh>
         {/* bench + drying rack */}
-        <mesh position={[7, 0.45, -8.3]} material={mat('#c7774f')} castShadow><boxGeometry args={[6, 0.9, 0.8]} /></mesh>
-        {[5, 6.2, 7.4, 8.6].map((x, i) => (
-          <mesh key={x} position={[x, 1.1, -8.3]} material={mat(['#a6ce56', '#9dbce8', '#e7b65f', '#886951'][i])}><icosahedronGeometry args={[0.28, 0]} /></mesh>
-        ))}
+        <WorkshopBench />
         <mesh position={[7, 2.1, -8.5]} material={mat('#13293a')}><boxGeometry args={[5.4, 0.06, 0.06]} /></mesh>
         {[5.4, 6.4, 7.6, 8.6].map(x => (
           <mesh key={x} position={[x, 1.75, -8.5]} material={mat('#7fa84a')}><coneGeometry args={[0.18, 0.6, 5]} /></mesh>
@@ -149,9 +151,7 @@ export function Rooftop() {
       {[[-6, 5.2], [6, 5.2], [-6, 11.4], [6, 11.4]].map(([x, z]) => (
         <mesh key={`${x}${z}`} position={[x, 1.4, z]} material={mat('#13293a')}><cylinderGeometry args={[0.07, 0.07, 2.8, 5]} /></mesh>
       ))}
-      <StringLights from={[-6, 2.8, 5.2]} to={[6, 2.8, 5.2]} n={11} />
-      <StringLights from={[-6, 2.8, 11.4]} to={[6, 2.8, 11.4]} n={11} />
-      <StringLights from={[-6, 2.8, 5.2]} to={[-6, 2.8, 11.4]} n={6} />
+      <StringLights />
 
       {/* stair hut */}
       <RoundedBox args={[3.2, 3, 3.6]} radius={0.25} smoothness={2} position={[10.2, 1.5, 10]} material={mat('#506d58')} castShadow />
@@ -164,6 +164,7 @@ export function Rooftop() {
       </mesh>
 
       {/* water tank, bench, pots, antenna */}
+      <SolidSurfaces>
       <mesh position={[-10.6, 1.6, 4.2]} material={mat('#90a7a1')} castShadow><cylinderGeometry args={[1.1, 1.1, 2.2, 8]} /></mesh>
       <mesh position={[-10.6, 2.9, 4.2]} material={mat('#13293a')}><coneGeometry args={[1.2, 0.5, 8]} /></mesh>
       {[[-11.5, 3.3], [-9.7, 3.3], [-11.5, 5.1], [-9.7, 5.1]].map(([x, z]) => (
@@ -181,6 +182,7 @@ export function Rooftop() {
         <mesh position={[0, 2, 0]} material={mat('#13293a')}><cylinderGeometry args={[0.08, 0.1, 4, 5]} /></mesh>
         <mesh position={[0, 4.1, 0]} material={lampMat}><icosahedronGeometry args={[0.18, 0]} /></mesh>
       </group>
+      </SolidSurfaces>
     </group>
   );
 }

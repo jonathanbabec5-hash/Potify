@@ -1,5 +1,5 @@
 import { useLayoutEffect, useMemo, useRef } from 'react';
-import { Color, InstancedMesh, Matrix4 } from 'three';
+import { BoxGeometry, CanvasTexture, Color, InstancedMesh, Matrix4, SRGBColorSpace } from 'three';
 import { lampMat, mat, seeded } from './materials';
 
 type Block = { x: number; y: number; z: number; w: number; h: number; d: number; color: string };
@@ -11,7 +11,7 @@ function block(x: number, y: number, z: number, w: number, h: number, d: number,
 
 function neighborhood() {
   const rand = seeded(713);
-  const buildings: Block[] = [], windows: Block[] = [];
+  const buildings: Block[] = [], caps: Block[] = [];
   for (let row = -5; row <= 3; row++) {
     for (let col = -5; col <= 5; col++) {
       // Keep the canal, the player's roof, and the camera approach open.
@@ -22,21 +22,40 @@ function neighborhood() {
       const h = far ? 22 + rand() * 28 : 8 + rand() * 13;
       const colors = far ? towers : masonry;
       buildings.push(block(x, h / 2, z, w, h, d, colors[Math.floor(rand() * colors.length)]));
-      buildings.push(block(x, h + 0.25, z, w + 0.35, 0.5, d + 0.35, '#484c50'));
-      buildings.push(block(x, h + 1.1, z, w * 0.62, 1.7, d * 0.55, '#626466'));
-      if (far && h > 43) buildings.push(block(x, h + 4, z, 0.14, 6, 0.14, '#51575a'));
-      for (let level = 2; level < h - 1; level += 3) {
-        for (const offset of [-0.29, 0, 0.29]) {
-          const glow = rand() < 0.3 ? '#f1c480' : '#47565c';
-          windows.push(block(x + w * offset, level, z + d / 2 + 0.02, w * 0.14, 1.05, 0.07, glow));
-        }
-      }
+      caps.push(block(x, h + 0.25, z, w + 0.35, 0.5, d + 0.35, '#484c50'));
+      caps.push(block(x, h + 1.1, z, w * 0.62, 1.7, d * 0.55, '#626466'));
+      if (far && h > 43) caps.push(block(x, h + 4, z, 0.14, 6, 0.14, '#51575a'));
+
     }
   }
-  return { buildings, windows };
+  return { buildings, caps };
 }
 
-function Blocks({ items }: { items: Block[] }) {
+// Window rows are painted on the four outer walls. Rooftops and ledges stay
+// solid, and distant windows no longer submit thousands of separate faces.
+function makeFacade() {
+  const canvas = document.createElement('canvas');
+  canvas.width = 96; canvas.height = 192;
+  const g = canvas.getContext('2d')!;
+  g.fillStyle = '#f2eae0'; g.fillRect(0,0,96,192);
+  const random = seeded(802);
+  for (let y=6;y<184;y+=16) {
+    g.fillStyle = '#c8bdaf'; g.fillRect(0,y+8,96,2);
+    for (let x=8;x<94;x+=24) {
+      g.fillStyle = random()<0.26 ? '#ffdd9e' : '#6b7980';
+      g.fillRect(x,y,11,7);
+    }
+  }
+  const texture = new CanvasTexture(canvas);
+  texture.colorSpace = SRGBColorSpace;
+  return texture;
+}
+let facade: CanvasTexture | undefined;
+const wallGeometry = new BoxGeometry();
+const uv = wallGeometry.attributes.uv;
+for (let i=8;i<16;i++) uv.setXY(i,0.01,0.99); // top and bottom faces
+
+function Blocks({ items, walls = false }: { items: Block[]; walls?: boolean }) {
   const ref = useRef<InstancedMesh>(null);
   useLayoutEffect(() => {
     const mesh = ref.current;
@@ -50,8 +69,8 @@ function Blocks({ items }: { items: Block[] }) {
     if (mesh.instanceColor) mesh.instanceColor.needsUpdate = true;
     mesh.computeBoundingSphere();
   }, [items]);
-  return <instancedMesh ref={ref} args={[undefined, undefined, items.length]}>
-    <boxGeometry /><meshStandardMaterial roughness={0.85} />
+  return <instancedMesh ref={ref} args={[walls ? wallGeometry : undefined, undefined, items.length]}>
+    {!walls && <boxGeometry />}<meshLambertMaterial map={walls ? (facade ??= makeFacade()) : null} />
   </instancedMesh>;
 }
 
@@ -67,6 +86,6 @@ export function CanalSkyline() {
       {[-1.95, 1.95].map(dx => <mesh key={dx} position={[dx, 4.25, 0]} material={mat('#515955')}><boxGeometry args={[0.14, 0.8, 17]} /></mesh>)}
       {[-6, 6].map(z => <mesh key={z} position={[-1.95, 5.1, z]} material={lampMat}><sphereGeometry args={[0.22, 6, 4]} /></mesh>)}
     </group>)}
-    <Blocks items={city.buildings} /><Blocks items={city.windows} />
+    <Blocks items={city.buildings} walls /><Blocks items={city.caps} />
   </group>;
 }

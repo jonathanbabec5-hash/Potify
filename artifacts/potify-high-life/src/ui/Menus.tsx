@@ -1,3 +1,4 @@
+import { lastFrameReport } from '@/game/frameBudget';
 import { houseDate } from '@/game/house';
 import { HousePanel, NeighborVisit, TowerDirectory } from './House';
 import { devlogUrl } from '@/game/routes';
@@ -691,6 +692,7 @@ function Toggle({ on, onClick, label, test }: { on: boolean; onClick: () => void
 }
 
 function SettingsPanel() {
+  const frames = lastFrameReport();
   const st = useG(s => s.settings);
   const saveError = useG(s => s.saveError);
   const savedAt = useG(s => s.savedAt);
@@ -710,9 +712,13 @@ function SettingsPanel() {
       <div className="grid grid-cols-2 gap-2 mt-1.5">
         {(['low', 'high'] as const).map(q => (
           <button key={q} onClick={() => { game.setSettings({ quality: q }); sfx.click(); }} data-testid={`button-quality-${q}`}
-            className={`chunk py-2 text-sm ${st.quality === q ? 'bg-butter' : 'bg-cream'}`}>{q === 'low' ? 'Light (battery saver)' : 'Full (shadows)'}</button>
+            className={`chunk py-2 text-sm ${st.quality === q ? 'bg-butter' : 'bg-cream'}`}>{q === 'low' ? 'Light (battery saver)' : 'Full detail'}</button>
         ))}
       </div>
+      <p data-testid="play-performance" className="mt-2 text-xs text-muted-foreground">
+        {frames ? `Last play sample · ${frames.place} · ${frames.fps.toFixed(1)} FPS · 95% of frames within ${Math.ceil(frames.p95)} ms`
+          : 'Walk for a few seconds to measure gameplay performance here.'}
+      </p>
       <div className="mt-5 rounded-xl bg-muted p-3">
         <p className="text-sm font-bold">{saveError ? <span className="text-coral">{saveError}</span> : savedAt ? `Last saved ${new Date(savedAt).toLocaleTimeString()}` : 'Not saved yet.'}</p>
         <div className="grid grid-cols-2 gap-2 mt-2">
