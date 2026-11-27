@@ -408,3 +408,38 @@ test('reset protects the new lease from idle position writes and preserves a sav
   resident.start({ name: 'New resident' });
   assert.deepEqual(JSON.parse(localStorage.getItem(SAVE_KEY)).position, lease);
 });
+
+test('headwear and hair choices survive a reload and older residents keep the original outfit', async () => {
+  const legacy = structuredClone(game.getState());
+  delete legacy.hairStyle;
+  delete legacy.wearsCap;
+  storage.set(SAVE_KEY, JSON.stringify(legacy));
+  const { game: resident } = await import('../store.ts?hair-legacy');
+  assert.equal(resident.getState().hairStyle, 'sweep');
+  assert.equal(resident.getState().wearsCap, true);
+  resident.start({ hairStyle: 'tail', wearsCap: false });
+  resident.customize({ shirt: '#72543c' });
+  const { game: restored } = await import('../store.ts?hair-saved');
+  assert.equal(restored.getState().hairStyle, 'tail');
+  assert.equal(restored.getState().wearsCap, false);
+  restored.customize({ wearsCap: true });
+  assert.equal(restored.getState().hairStyle, 'tail');
+  const future = { ...restored.getState(), hairStyle: 'future-cut' };
+  storage.set(SAVE_KEY, JSON.stringify(future));
+  const { game: compatible } = await import('../store.ts?hair-future');
+  assert.equal(compatible.getState().hairStyle, 'sweep');
+  assert.equal(compatible.getState().day, legacy.day);
+  assert.equal(compatible.getState().saveError, null);
+});
+
+test('saving a studio haircut preserves newer progress from another tab', async () => {
+  const { game: studio } = await import('../store.ts?hair-studio-tab');
+  const latest = { ...studio.getState(), day: studio.getState().day + 1, money: 298.13 };
+  storage.set(SAVE_KEY, JSON.stringify(latest));
+  assert.equal(studio.saveStudioLook({ hairStyle: 'coils', wearsCap: false }).ok, true);
+  const saved = JSON.parse(storage.get(SAVE_KEY));
+  assert.equal(saved.day, latest.day);
+  assert.equal(saved.money, latest.money);
+  assert.equal(saved.hairStyle, 'coils');
+  assert.equal(saved.wearsCap, false);
+});

@@ -1,11 +1,12 @@
+import { type HeadLook } from '@/game/appearance';
 import { Suspense, useLayoutEffect, useRef, useState, type CSSProperties } from 'react';
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import { Group, PerspectiveCamera } from 'three';
 import { Resident } from './Resident';
 
 type Shot = 'Face' | 'Outfit';
-function Fitting({ shirt, skin, shot, walk, yaw }: {
-  shirt: string; skin: string; shot: Shot; walk: boolean; yaw: number;
+function Fitting({ shirt, skin, look, shot, walk, yaw }: {
+  shirt: string; skin: string; look: HeadLook; shot: Shot; walk: boolean; yaw: number;
 }) {
   const { camera, size, invalidate } = useThree();
   const turn = useRef<Group>(null), speed = useRef(0);
@@ -30,19 +31,19 @@ function Fitting({ shirt, skin, shot, walk, yaw }: {
     <directionalLight color="#fff0df" intensity={2.45} position={[-2.6, 3.4, 2.4]} />
     <directionalLight color="#c5e5ea" intensity={1.5} position={[1.6, 1.9, -2]} />
     <directionalLight color="#ffe7d4" intensity={.45} position={[3, .9, 2]} />
-    <group ref={turn}><Resident shirt={shirt} skin={skin} speed={speed} /></group>
+    <group ref={turn}><Resident look={look} shirt={shirt} skin={skin} speed={speed} /></group>
   </>;
 }
 
-export function ResidentView({ shirt, skin, compact, studio = false }: {
-  shirt: string; skin: string; compact?: number; studio?: boolean;
+export function ResidentView({ shirt, skin, look, compact, studio = false }: {
+  shirt: string; skin: string; look: HeadLook; compact?: number; studio?: boolean;
 }) {
   const [shot, setShot] = useState<Shot>('Face');
   const [walk, setWalk] = useState(false);
-  const [yaw, setYaw] = useState(-.28);
+  const [yaw, setYaw] = useState(() => look.hairStyle === 'tail' ? .92 : -.28);
   const lastX = useRef<number | null>(null);
   const style: CSSProperties = compact ? { width: compact, height: compact, flexShrink: 0 } :
-    { height: studio ? 'min(69dvh,680px)' : 'clamp(160px,26dvh,260px)' };
+    { height: studio ? 'clamp(230px,55dvh,610px)' : 'clamp(160px,26dvh,260px)' };
   return <div>
     <div style={{ ...style, overflow:'hidden', position:'relative', borderRadius: compact ? 12 : 18,
       background:'radial-gradient(ellipse at 48% 33%, #c5c2ac 0%, #a3a998 43%, #6a7b70 77%, #485f56 100%)', touchAction:compact ? 'auto' : 'none' }}
@@ -51,7 +52,7 @@ export function ResidentView({ shirt, skin, compact, studio = false }: {
       onPointerMove={e => { if (lastX.current !== null) { const dx=e.clientX-lastX.current; lastX.current=e.clientX; setYaw(r => r+dx*.013); } }}
       onPointerUp={() => { lastX.current=null; }} onPointerCancel={() => { lastX.current=null; }}>
       <Canvas frameloop={compact ? 'demand' : 'always'} dpr={[1,1.5]} gl={{ alpha:true, antialias:true }} camera={{near:.03,far:20}}>
-        <Suspense fallback={null}><Fitting shirt={shirt} skin={skin} shot={shot} walk={walk} yaw={yaw}/></Suspense>
+        <Suspense fallback={null}><Fitting look={look} shirt={shirt} skin={skin} shot={shot} walk={walk} yaw={yaw}/></Suspense>
       </Canvas>
     </div>
     {!compact && <div className="flex justify-center gap-2 mt-2 flex-wrap">

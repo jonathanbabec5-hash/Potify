@@ -1,3 +1,5 @@
+import { readHeadLook } from '@/game/appearance';
+import { HairOptions } from '@/ui/HairOptions';
 import { ResidentView } from '@/scene/ResidentView';
 import { lastFrameReport } from '@/game/frameBudget';
 import { houseDate } from '@/game/house';
@@ -656,13 +658,15 @@ function Calendar() {
 
 /* ---------------- Avatar ---------------- */
 function AvatarPanel() {
-  const cur = useG(s => ({ name: s.name, shirt: s.shirt, skin: s.skin }));
+  const cur = useG(s => ({ name: s.name, shirt: s.shirt, skin: s.skin, hairStyle: s.hairStyle, wearsCap: s.wearsCap }));
   const [name, setName] = useState(cur.name);
+  const [look, setLook] = useState(() => readHeadLook(cur));
   const [shirt, setShirt] = useState(cur.shirt);
   const [skin, setSkin] = useState(cur.skin);
   return (
     <Sheet title="Wardrobe" kicker="Change your look anytime" accent="bg-coral" test="modal-avatar">
-      <ResidentView shirt={shirt} skin={skin} />
+      <ResidentView look={look} shirt={shirt} skin={skin} />
+      <HairOptions look={look} onChange={setLook} />
       <div className="flex gap-4 items-center mt-3">
         <div className="flex-1">
           <label className="font-display" htmlFor="avatar-name">Name</label>
@@ -675,7 +679,7 @@ function AvatarPanel() {
       <p className="font-display mt-3">Skin tone</p>
       <Swatches colors={SKINS} value={skin} onChange={setSkin} test="av-skin" />
       <button className="chunk w-full bg-tangerine text-cream py-3 mt-5" data-testid="button-save-avatar"
-        onClick={() => { if (act(() => game.customize({ name: name.trim() || cur.name, shirt, skin }))) { sfx.upgrade(); closeModal(); } }}>Save look</button>
+        onClick={() => { if (act(() => game.customize({ name: name.trim() || cur.name, shirt, skin, ...look }))) { sfx.upgrade(); closeModal(); } }}>Save look</button>
     </Sheet>
   );
 }

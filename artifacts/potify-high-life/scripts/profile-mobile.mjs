@@ -12,6 +12,8 @@ const { chromium } = require(process.env.PLAYWRIGHT_MODULE || 'playwright');
 const seconds = Number(process.env.PROFILE_SECONDS || 8.8);
 assert.ok(seconds >= 4 && Number.isFinite(seconds), 'PROFILE_SECONDS must be at least four seconds');
 const args = process.argv.slice(2);
+const hairStyle = args.find(arg => arg.startsWith('--hair='))?.slice(7);
+if (hairStyle) assert.ok(['sweep', 'coils', 'tail'].includes(hairStyle), 'Choose sweep, coils or tail');
 const build = args.find(arg => !arg.startsWith('--')) || 'dist/offline/POTIFY-A-Wonderful-High-Life.html';
 const routes = [
   { name: 'Apartment 7B', zone: 'tower', x: -4.4, z: -2.55, floor: 7, minute: 510 },
@@ -63,12 +65,13 @@ try {
     });
     const save = structuredClone(game.getState());
     Object.assign(save, {
+      ...(hairStyle ? { hairStyle, wearsCap: false } : {}),
       started: true, acknowledged: true, minute, projects: ['glasshouse', 'cart'],
       position: { zone, x, z, floor },
       plots: Array.from({ length: 8 }, (_, id) => ({
         id, strain: ['sunhaze', 'moonmint', 'amber'][id % 3], growth: 100, health: 90, water: 65, fed: true,
       })),
-      settings: { ...save.settings, muted: true, music: false, camera: args.includes('--resident') ? 0 : 1, quality: 'high' },
+      settings: { ...save.settings, muted: true, music: false, camera: args.includes('--resident') || hairStyle ? 0 : 1, quality: 'high' },
     });
     await page.addInitScript(({ key, save }) => localStorage.setItem(key, JSON.stringify(save)), { key: SAVE_KEY, save });
     await page.addInitScript(installMeter);

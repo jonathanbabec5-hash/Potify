@@ -1,3 +1,4 @@
+import { ORIGINAL_LOOK, type HeadLook } from '@/game/appearance';
 import type { ReactNode } from 'react';
 import { X } from 'lucide-react';
 import { closeModal, useHudVisible, useUI } from '@/game/runtime';
@@ -22,8 +23,8 @@ export function Swatches({ colors, value, onChange, test }: { colors: string[]; 
   );
 }
 
-export function AvatarFigure({ shirt, skin, size = 64, variant = 'player' }: { shirt: string; skin: string; size?: number; variant?: Resident | 'player' }) {
-  if (variant === 'player') return <ResidentView shirt={shirt} skin={skin} compact={size} />;
+export function AvatarFigure({ shirt, skin, look = ORIGINAL_LOOK, size = 64, variant = 'player' }: { shirt: string; skin: string; size?: number; look?: HeadLook; variant?: Resident | 'player' }) {
+  if (variant === 'player') return <ResidentView look={look} shirt={shirt} skin={skin} compact={size} />;
   const hair = NPCS[variant].hair;
   return (
     <svg width={size} height={size} viewBox="0 0 64 64" aria-hidden="true" className="shrink-0 rounded-2xl bg-[#dfc79c] border-[2.5px] border-ink">

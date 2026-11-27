@@ -10,3 +10,5 @@ The human topology, face and hand weights, skin, eyes, brows, hair, lashes, work
 - [Core asset data conversion used for fitting](https://github.com/makehuman-js/makehuman-data/tree/e5d1a42cb469025a6d2b3ecea3e0252e6feccc1f/public/data)
 
 Open `?resident=1` to inspect the face, rotate the outfit or see the gait. Use Wardrobe in gameplay to save a shirt and complexion. Run `npm run build:offline` followed by `node --experimental-strip-types scripts/profile-mobile.mjs --resident --check` to exercise the visible model across the five profiling routes.
+
+The swept crop, coily crop and ponytail use the MakeHuman CC0 system hair (short02, afro01 and ponytail01). Each attachment fits this head in joint-local coordinates with baked handheld triangle indices. The cap uses fitted hair at its rim and the ponytail exits at the back. Test an uncovered style in third person with the additional profiling flag `--hair=tail`.

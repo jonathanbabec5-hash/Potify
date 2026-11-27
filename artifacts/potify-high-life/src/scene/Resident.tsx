@@ -1,6 +1,10 @@
-import { use, useEffect, useLayoutEffect, useMemo, useRef, type RefObject } from 'react';
-import { useFrame, useLoader } from '@react-three/fiber';
-import { Bone, BufferAttribute, BufferGeometry, Color, DataTexture, Group, LinearFilter, MathUtils, MeshStandardMaterial, SkinnedMesh } from 'three';
+import { type HeadLook, type HairStyle } from '@/game/appearance';
+import sweepUrl from '@/assets/resident/sweep.glb?url';
+import coilUrl from '@/assets/resident/coils.glb?url';
+import tailUrl from '@/assets/resident/tail.glb?url';
+import { Suspense, use, useEffect, useLayoutEffect, useMemo, useRef, type RefObject } from 'react';
+import { createPortal, useFrame, useLoader } from '@react-three/fiber';
+import { Bone, BufferAttribute, BufferGeometry, Color, DataTexture, Group, LinearFilter, MathUtils, Mesh, MeshStandardMaterial, SkinnedMesh } from 'three';
 import { GLTFLoader, type GLTF } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { clone } from 'three/examples/jsm/utils/SkeletonUtils.js';
 import residentUrl from '@/assets/resident/resident.glb?url';
@@ -26,6 +30,8 @@ function simplified(source: BufferGeometry, indices: BufferAttribute) {
   if (!geometry) {
     geometry = new BufferGeometry();
     for (const [name, attribute] of Object.entries(source.attributes)) geometry.setAttribute(name, attribute);
+    geometry.morphAttributes = source.morphAttributes;
+    geometry.morphTargetsRelative = source.morphTargetsRelative;
     geometry.setIndex(indices);
     distanceGeometry.set(source, geometry);
   }
@@ -65,18 +71,57 @@ function dress(template: Group, indices: Indices | null) {
       node.material = material;
     }
   });
-  return { model, bones, dyes };
+  const originalHair = model.getObjectByName('HairMesh') as SkinnedMesh;
+  const originalCap = model.getObjectByName('WatchCapMesh') as SkinnedMesh;
+  return { model, bones, dyes, originalHair, originalCap };
+}
+
+const hairUrls: Record<HairStyle, string> = { sweep: sweepUrl, coils: coilUrl, tail: tailUrl };
+
+function Ponytail({ geometry, material, speed, handheld }: {
+  geometry: BufferGeometry; material: MeshStandardMaterial; speed: RefObject<number>; handheld: boolean;
+}) {
+  const mesh = useRef<Mesh>(null);
+  const phase = useRef(0), movement = useRef(0);
+  useFrame(({ clock }, delta) => {
+    const weights = mesh.current?.morphTargetInfluences;
+    if (!weights) return;
+    const dt = Math.min(delta, .066);
+    movement.current = MathUtils.damp(movement.current, Math.min(1, speed.current / 4.4), 7, dt);
+    phase.current += dt * (speed.current > 5 ? 10.4 : 7.8) * movement.current;
+    weights[0] = Math.sin(phase.current - .55) * .80 * movement.current + .045 * Math.sin(clock.elapsedTime * 1.2);
+    weights[1] = movement.current * (.35 + .25 * Math.cos(2 * phase.current));
+  });
+  return <mesh ref={mesh} args={[geometry, material]} castShadow={!handheld} dispose={null} />;
+}
+
+function HairPiece({ look, head, originalHair, originalCap, speed, handheld }: {
+  look: HeadLook; head: Bone; originalHair: Mesh; originalCap: Mesh; speed: RefObject<number>; handheld: boolean;
+}) {
+  const asset = useLoader(GLTFLoader, hairUrls[look.hairStyle]);
+  const variant = look.wearsCap ? 'Tucked' : 'Loose';
+  const part = asset.scene.getObjectByName(variant) as Mesh<BufferGeometry, MeshStandardMaterial>;
+  const indices = handheld ? use(handheldIndices(asset)).get(variant) : undefined;
+  const geometry = indices ? simplified(part.geometry, indices) : part.geometry;
+  useLayoutEffect(() => {
+    originalHair.visible = false;
+    originalCap.visible = look.wearsCap;
+    return () => { originalHair.visible = true; originalCap.visible = true; };
+  }, [originalHair, originalCap, look.wearsCap]);
+  return createPortal(look.hairStyle === 'tail'
+    ? <Ponytail geometry={geometry} material={part.material} speed={speed} handheld={handheld} />
+    : <mesh geometry={geometry} material={part.material} castShadow={!handheld} dispose={null} />, head);
 }
 
 const baseSkin = new Color('#edc2a7');
 const white = new Color(1, 1, 1);
 
-export function Resident({ shirt, skin, speed, handheld = false }: {
-  shirt: string; skin: string; speed: RefObject<number>; handheld?: boolean;
+export function Resident({ shirt, skin, speed, look, handheld = false }: {
+  shirt: string; skin: string; look: HeadLook; speed: RefObject<number>; handheld?: boolean;
 }) {
   const asset = useLoader(GLTFLoader, residentUrl);
   const indices = handheld ? use(handheldIndices(asset)) : null;
-  const { model, bones, dyes } = useMemo(() => dress(asset.scene, indices), [asset.scene, indices]);
+  const { model, bones, dyes, originalHair, originalCap } = useMemo(() => dress(asset.scene, indices), [asset.scene, indices]);
   const elapsed = useRef(0);
   const stride = useRef(0);
   useLayoutEffect(() => {
@@ -128,5 +173,8 @@ export function Resident({ shirt, skin, speed, handheld = false }: {
       <meshBasicMaterial map={contactMap} color="#342c23" transparent opacity={.36} depthWrite={false} />
     </mesh>}
     <primitive object={model} dispose={null} />
+    {!(look.hairStyle === 'sweep' && look.wearsCap) && <Suspense fallback={null}>
+      <HairPiece look={look} head={bones.head} originalHair={originalHair} originalCap={originalCap} speed={speed} handheld={handheld} />
+    </Suspense>}
   </>;
 }

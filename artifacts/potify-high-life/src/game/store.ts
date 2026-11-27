@@ -1,3 +1,4 @@
+import { ORIGINAL_LOOK, readHeadLook, type HeadLook } from './appearance.ts';
 import { freshLife, validLife, validFloor, childStage, houseDate, NEIGHBORS, PASTIMES, PEOPLE, meetingFloor, type Neighbor, type Pastime, type HouseLife } from './house.ts';
 import { useSyncExternalStore } from 'react';
 import { chooseStory, freshStory, readStory, validateStory, type ChoiceId, type Resident, type StoryItem, type StoryProgress } from './story.ts';
@@ -41,7 +42,7 @@ export interface Settings {
   camera: number;
   quality: 'low' | 'high';
 }
-export interface GameState {
+export interface GameState extends HeadLook {
   version: 1;
   started: boolean;
   acknowledged: boolean;
@@ -107,7 +108,7 @@ export const SAVE_KEY = 'potify-wonderful-high-life-v1';
 function freshState(): GameState {
   return {
     version: 1, started: false, acknowledged: false,
-    name: 'Rookie', shirt: '#c7774f', skin: '#d9a67d',
+    ...ORIGINAL_LOOK, name: 'Rookie', shirt: '#c7774f', skin: '#d9a67d',
     day: 1, minute: 480, elapsed: 0, money: ECONOMY.startingMoney,
     seeds: { sunhaze: 2, moonmint: 0, amber: 0 }, supplies: 1,
     harvest: [],
@@ -130,7 +131,9 @@ const validColor = (v: unknown): v is string => typeof v === 'string' && /^#[0-9
 const seedExists = (id: string) => SEEDS.some(s => s.id === id);
 
 type Additions = 'story' | 'projects' | 'crate' | 'deliveries' | 'warehouse' | 'life';
-type SavedGame = Omit<GameState, Additions> & Partial<Pick<GameState, Additions>>;
+type SavedGame = Omit<GameState, Additions | keyof HeadLook> & Partial<Pick<GameState, Additions>> &
+  { hairStyle?: unknown; wearsCap?: unknown };
+type AvatarEdit = Partial<Pick<GameState, 'name' | 'shirt' | 'skin'> & HeadLook>;
 function validBatch(h: unknown): h is Harvest {
   return object(h) && typeof h.id === 'string' && typeof h.strain === 'string' && seedExists(h.strain) &&
     finite(h.units, 1) && finite(h.quality, 1, 3) && Number.isInteger(h.quality);
@@ -182,7 +185,7 @@ function load(): GameState {
     if (!raw) return initial;
     const parsed: unknown = JSON.parse(raw);
     if (!validateSave(parsed)) return { ...initial, saveError: 'Your saved game could not be read. It has not been overwritten. Reset from settings to start fresh.' };
-    return { ...parsed, life: parsed.life ?? initial.life, warehouse: parsed.warehouse ?? initial.warehouse, projects: parsed.projects ?? [], deliveries: parsed.deliveries ?? 0, crate: parsed.crate ?? null, story: parsed.story ?? initial.story, saveError: null };
+    return { ...parsed, ...readHeadLook(parsed), life: parsed.life ?? initial.life, warehouse: parsed.warehouse ?? initial.warehouse, projects: parsed.projects ?? [], deliveries: parsed.deliveries ?? 0, crate: parsed.crate ?? null, story: parsed.story ?? initial.story, saveError: null };
   } catch {
     return { ...initial, saveError: 'Local save storage is unavailable or unreadable. Progress cannot be saved until browser storage is available.' };
   }
@@ -288,10 +291,10 @@ const NPC_DIALOGUE: Record<string, string[]> = {
 export const game = {
   getState: () => state,
   subscribe(fn: () => void) { listeners.add(fn); return () => { listeners.delete(fn); }; },
-  start(avatar: Partial<Pick<GameState, 'name' | 'shirt' | 'skin'>> = {}): string {
+  start(avatar: AvatarEdit = {}): string {
     if (saveLocked) return state.saveError ?? 'Resolve the save error before starting.';
     const name = avatar.name?.trim().slice(0, 24) || state.name;
-    commit({ ...state, name, shirt: validColor(avatar.shirt) ? avatar.shirt : state.shirt,
+    commit({ ...state, ...readHeadLook(avatar, state), name, shirt: validColor(avatar.shirt) ? avatar.shirt : state.shirt,
       skin: validColor(avatar.skin) ? avatar.skin : state.skin, started: true, acknowledged: true });
     return `Welcome home, ${name}. Your rooftop story starts here.`;
   },
@@ -513,11 +516,20 @@ export const game = {
     commit({ ...state, plots: plants, day: state.day + 1, minute: 480, elapsed: state.elapsed + 60 });
     return `Good morning! Day ${state.day}. Your plants had a little time to grow overnight.`;
   },
-  customize(avatar: Partial<Pick<GameState, 'name' | 'shirt' | 'skin'>>): string {
-    commit({ ...state, name: avatar.name?.trim().slice(0, 24) || state.name,
+  saveStudioLook(look: HeadLook): { ok: boolean; message: string } {
+    // The fitting room can remain open while a second tab advances the game.
+    const latest = load();
+    const blocked = latest.saveError ?? (saveLocked ? state.saveError ?? 'Saving is unavailable.' : null);
+    if (blocked) return { ok: false, message: blocked };
+    commit({ ...latest, ...readHeadLook(look, latest) });
+    return { ok: !state.saveError, message: state.saveError ?? 'Look saved on this device.' };
+  },
+  customize(avatar: AvatarEdit): string {
+    if (saveLocked) return state.saveError ?? 'Resolve the save error before changing your look.';
+    commit({ ...state, ...readHeadLook(avatar, state), name: avatar.name?.trim().slice(0, 24) || state.name,
       shirt: validColor(avatar.shirt) ? avatar.shirt : state.shirt,
       skin: validColor(avatar.skin) ? avatar.skin : state.skin });
-    return 'Looking good. Your character has been updated.';
+    return state.saveError ?? 'Looking good. Your character has been updated.';
   },
   setSettings(settings: Partial<Settings>): string {
     const next = { ...state.settings, ...settings };
@@ -563,10 +575,26 @@ export function useGame(): GameState {
   return useSyncExternalStore(game.subscribe, game.getState, game.getState);
 }
 
-if (typeof window !== 'undefined') {
+// A fitting-room tab writes only when its user saves a look.
+if (typeof window !== 'undefined' && !new URLSearchParams(window.location?.search).has('resident')) {
   window.addEventListener('pagehide', () => { if (state.started) persist(false); });
   document.addEventListener('visibilitychange', () => {
     pendingTime = 0;
     if (document.visibilityState === 'hidden' && state.started) persist(false);
+  });
+}
+
+if (typeof window !== 'undefined') {
+  window.addEventListener('storage', event => {
+    if (event.key !== SAVE_KEY || !event.newValue || saveLocked) return;
+    try {
+      const next: unknown = JSON.parse(event.newValue);
+      const previous: unknown = event.oldValue ? JSON.parse(event.oldValue) : ORIGINAL_LOOK;
+      if (!object(next) || !object(previous)) return;
+      const look = readHeadLook(next), before = readHeadLook(previous);
+      if (look.hairStyle !== before.hairStyle || look.wearsCap !== before.wearsCap) {
+        update({ ...state, ...look });
+      }
+    } catch { /* An unreadable cross-tab write cannot supply a look. */ }
   });
 }

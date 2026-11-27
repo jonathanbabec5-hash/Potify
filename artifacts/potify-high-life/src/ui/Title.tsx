@@ -1,3 +1,5 @@
+import { readHeadLook, ORIGINAL_LOOK } from '@/game/appearance';
+import { HairOptions } from '@/ui/HairOptions';
 import { ResidentView } from '@/scene/ResidentView';
 import { devlogUrl } from '@/game/routes';
 import campaignArt from '../assets/surfaces/roof-title.webp';
@@ -12,9 +14,10 @@ import { SHIRTS, SKINS, Swatches, AvatarFigure } from '@/ui/common';
 export function Title() {
   const started = useG(s => s.started);
   const acknowledged = useG(s => s.acknowledged);
-  const saved = useG(s => ({ name: s.name, shirt: s.shirt, skin: s.skin, day: s.day, money: s.money }));
+  const saved = useG(s => ({ name: s.name, shirt: s.shirt, skin: s.skin, hairStyle: s.hairStyle, wearsCap: s.wearsCap, day: s.day, money: s.money }));
   const [step, setStep] = useState<'menu' | 'create' | 'confirmReset'>('menu');
   const [name, setName] = useState(saved.name || 'Rooftop Rookie');
+  const [look, setLook] = useState(() => readHeadLook(saved));
   const [shirt, setShirt] = useState(saved.shirt || '#c7774f');
   const [skin, setSkin] = useState(saved.skin || SKINS[1]);
   const [ack, setAck] = useState(false);
@@ -28,7 +31,7 @@ export function Title() {
   const cont = () => { unlockAudio(); if (started && acknowledged) enter(); else { setStep('create'); sfx.open(); } };
   const begin = () => {
     if (!ack) return;
-    if (act(() => game.start({ name: name.trim() || 'Rooftop Rookie', shirt, skin }), true)) enter();
+    if (act(() => game.start({ name: name.trim() || 'Rooftop Rookie', shirt, skin, ...look }), true)) enter();
   };
 
   return (
@@ -51,7 +54,7 @@ export function Title() {
             <div className="panel p-5 md:p-6 pop" data-testid="panel-start">
               {started ? (
                 <div className="flex items-center gap-3 mb-4 rounded-2xl bg-muted p-3">
-                  <AvatarFigure shirt={saved.shirt} skin={saved.skin} size={52} />
+                  <AvatarFigure look={saved} shirt={saved.shirt} skin={saved.skin} size={52} />
                   <div className="min-w-0">
                     <p className="font-display text-xl truncate">{saved.name}</p>
                     <p className="text-sm font-bold text-muted-foreground">Day {saved.day} · {saved.money.toFixed(2)} simSOL (simulated)</p>
@@ -93,7 +96,7 @@ export function Title() {
                 <button className="chunk bg-coral text-cream py-3" data-testid="button-confirm-reset" onClick={() => {
                   const result = resetResident();
                   if (!result.ok) { setResetError(result.message); return; }
-                  setName('Rooftop Rookie'); setShirt('#c7774f'); setSkin(SKINS[1]); setAck(false); setStep('create');
+                  setLook(ORIGINAL_LOOK); setName('Rooftop Rookie'); setShirt('#c7774f'); setSkin(SKINS[1]); setAck(false); setStep('create');
                 }}>Erase and begin</button>
               </div>
             </div>
@@ -101,7 +104,8 @@ export function Title() {
 
           {step === 'create' && (
             <div className="panel p-5 md:p-6 pop max-h-[78dvh] overflow-auto" data-testid="panel-create">
-              <ResidentView shirt={shirt} skin={skin} />
+              <ResidentView look={look} shirt={shirt} skin={skin} />
+              <HairOptions look={look} onChange={setLook} />
               <div className="flex items-start gap-4 mt-3">
                 <div className="flex-1 min-w-0">
                   <p className="text-xs font-black uppercase tracking-widest text-jade">New resident</p>

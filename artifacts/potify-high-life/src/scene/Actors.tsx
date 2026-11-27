@@ -37,6 +37,7 @@ export function Player() {
   const firstPerson = useG(s => s.settings.camera === 1);
   const handheld = window.matchMedia('(pointer: coarse)').matches;
   const shirt = useG(s => s.shirt);
+  const hairStyle = useG(s => s.hairStyle), wearsCap = useG(s => s.wearsCap);
   const skin = useG(s => s.skin);
   const leased = useG(s => s.warehouse.leased);
   const town = leased ? TOWN_COLLIDERS : CLOSED_WARD_COLLIDERS;
@@ -148,7 +149,7 @@ export function Player() {
 
   return (
     <group ref={group} visible={!firstPerson}>
-      {!firstPerson && <Suspense fallback={null}><Resident shirt={shirt} skin={skin} speed={speed} handheld={handheld} /></Suspense>}
+      {!firstPerson && <Suspense fallback={null}><Resident look={{ hairStyle, wearsCap }} shirt={shirt} skin={skin} speed={speed} handheld={handheld} /></Suspense>}
     </group>
   );
 }
