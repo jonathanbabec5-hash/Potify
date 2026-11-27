@@ -18,7 +18,7 @@ import {
   type Neighbor,
   type Pastime,
 } from '@/game/house';
-import { MUG_SCENE, fourthMugOpening, type MugChoice } from '@/game/fourthMug';
+import { MUG_SCENE, fourthMugRecollection, type MugChoice } from '@/game/fourthMug';
 import { landingNotice, townNotices } from '@/game/notices';
 import { Sheet } from './common';
 
@@ -365,15 +365,18 @@ function Commons() {
 function FourthMug() {
   const memory = useG(s => s.life.fourthMug);
   const day = useG(s => s.day);
-  const opening = useG(s => fourthMugOpening(s.life.festivals, s.projects[0]));
-  if (!opening.length) return null;
-  const paragraphs = opening.map(line => <p key={line} className="mb-3 leading-relaxed">{line}</p>);
+  const kitchen = useG(s => MUG_SCENE.project[s.projects[0] ?? 'none']);
+  const recollection = useG(s => fourthMugRecollection(s.life.festivals));
+  if (!recollection.length) return null;
+  const observation = <p className="mb-3 leading-relaxed">{kitchen}</p>;
+  const paragraphs = recollection.map(line => <p key={line} className="mb-3 leading-relaxed">{line}</p>);
   if (memory) {
     return (
       <>
-        <p className="leading-relaxed" role="status" data-testid="mug-memory">
+        <p className="mb-3 leading-relaxed" role="status" data-testid="mug-memory">
           {day === memory.day ? MUG_SCENE.replies[memory.choice] : MUG_SCENE.later[memory.choice]}
         </p>
+        {observation}
         <details className="mt-4">
           <summary className="cursor-pointer py-3 font-bold">Remember that supper</summary>
           {paragraphs}
@@ -385,6 +388,7 @@ function FourthMug() {
   }
   return (
     <>
+      {observation}
       {paragraphs}
       <div className="grid gap-2 mt-4">
         {(Object.keys(MUG_SCENE.choices) as MugChoice[]).map(choice => (

@@ -1,5 +1,3 @@
-import type { RoofProject } from './store.ts';
-
 export type MugChoice = 'tea' | 'please';
 export type FourthMugMemory = { choice: MugChoice; day: number };
 
@@ -44,11 +42,11 @@ export function hasFourthMugSupper(festivals: FestivalRecord): boolean {
   return firstAutumnSupper(festivals) !== undefined;
 }
 
-export function fourthMugOpening(festivals: FestivalRecord, firstProject?: RoofProject) {
+export function fourthMugRecollection(festivals: FestivalRecord) {
   const season = firstAutumnSupper(festivals);
   if (season === undefined) return [];
   const supper = festivals[season] === 0 ? 'table' : 'bowls';
-  return [MUG_SCENE.project[firstProject ?? 'none'], MUG_SCENE.supper[supper], ...MUG_SCENE.opening];
+  return [MUG_SCENE.supper[supper], ...MUG_SCENE.opening];
 }
 
 export function validFourthMug(memory: unknown, festivals: FestivalRecord, today: number): boolean {

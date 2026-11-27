@@ -445,7 +445,7 @@ test('saving a studio haircut preserves newer progress from another tab', async 
 });
 
 test('the fourth-floor mug remembers either harvest supper and one choice across days and reloads', async () => {
-  const { fourthMugOpening, MUG_SCENE, hasFourthMugSupper } = await import('../fourthMug.ts');
+  const { fourthMugRecollection, MUG_SCENE, hasFourthMugSupper } = await import('../fourthMug.ts');
   assert.equal(hasFourthMugSupper({ 0: 1, 1: 0, 3: 1 }), false);
   assert.equal(hasFourthMugSupper({ 6: 0 }), true, 'a later year can be the first supper');
   const kitchen = { zone: 'tower', floor: 4, x: -4.35, z: 2.68 };
@@ -458,10 +458,10 @@ test('the fourth-floor mug remembers either harvest supper and one choice across
     while (resident.getState().day < 24) resident.sleep();
     assert.equal(resident.celebrate(meal), true, 'attend the existing autumn festival');
     const supper = resident.getState().life.festivals;
-    for (const first of ['glasshouse', 'cart', undefined]) {
-      const opening = fourthMugOpening(supper, first);
-      assert.ok(opening.includes(MUG_SCENE.supper[meal === 0 ? 'table' : 'bowls']));
-      assert.ok(opening.includes(MUG_SCENE.project[first ?? 'none']));
+    const recollection = fourthMugRecollection(supper);
+    assert.deepEqual(recollection, [MUG_SCENE.supper[meal === 0 ? 'table' : 'bowls'], ...MUG_SCENE.opening]);
+    for (const presentDayDetail of Object.values(MUG_SCENE.project)) {
+      assert.ok(!recollection.includes(presentDayDetail));
     }
     resident.setPosition({ ...kitchen, floor: 7 });
     assert.equal(resident.rememberFourthMug(choice), false);

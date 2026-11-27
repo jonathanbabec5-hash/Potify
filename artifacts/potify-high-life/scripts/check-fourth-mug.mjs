@@ -29,11 +29,12 @@ try {
   for (const [meal, projects, choice] of [
     [0, ['glasshouse', 'cart'], 'tea'],
     [1, ['cart', 'glasshouse'], 'please'],
+    [0, [], 'tea'],
   ]) {
     const state = structuredClone(game.getState());
     Object.assign(state, { started: true, acknowledged: true, day: 24, minute: 720, projects, position: table });
     state.quest.sold = true;
-    state.plots.push(...[6, 7].map(id => ({ ...state.plots[0], id })));
+    if (projects.includes('glasshouse')) state.plots.push(...[6, 7].map(id => ({ ...state.plots[0], id })));
     state.settings.muted = true;
     state.settings.showHud = false;
     assert.ok(validateSave(state));
@@ -62,7 +63,7 @@ try {
     await page.getByTestId('festival-' + meal).tap();
     await continueAt(page, table);
     await action.filter({ hasText: 'Blue kitchen mug' }).tap();
-    await page.getByText(MUG_SCENE.project[projects[0]], { exact: true }).waitFor();
+    await page.getByText(MUG_SCENE.project[projects[0] ?? 'none'], { exact: true }).waitFor();
     await page.getByText(MUG_SCENE.supper[meal === 0 ? 'table' : 'bowls'], { exact: true }).waitFor();
     await page.getByTestId('mug-' + choice).tap();
     const memory = page.getByTestId('mug-memory');
@@ -73,6 +74,12 @@ try {
     await page.getByTestId('button-continue').tap();
     await action.filter({ hasText: 'Supper table' }).tap();
     assert.equal(await memory.innerText(), MUG_SCENE.replies[choice]);
+    if (projects.length === 0) {
+      await continueAt(page, { zone: 'town', x: 92, z: -7.3 });
+      await action.filter({ hasText: 'Green Exchange' }).tap();
+      await page.getByTestId('build-cart').tap();
+      await page.waitForFunction(key => JSON.parse(localStorage.getItem(key)).projects[0] === 'cart', SAVE_KEY);
+    }
     await continueAt(page, bed);
     await action.filter({ hasText: 'Your bed' }).tap();
     await page.getByTestId('button-sleep').tap();
@@ -80,11 +87,15 @@ try {
     await continueAt(page, table);
     await action.filter({ hasText: 'Supper table' }).tap();
     assert.equal(await memory.innerText(), MUG_SCENE.later[choice]);
-    await page.getByText('Remember that supper', { exact: true }).tap();
-    await page.getByText(MUG_SCENE.replies[choice], { exact: true }).waitFor();
+    const currentDetail = MUG_SCENE.project[projects[0] ?? 'cart'];
+    await page.getByText(currentDetail, { exact: true }).waitFor();
+    const recollection = page.getByTestId('modal-house-fourth-mug').locator('details');
+    await recollection.locator('summary').tap();
+    await recollection.getByText(MUG_SCENE.replies[choice], { exact: true }).waitFor();
+    assert.equal(await recollection.getByText(currentDetail, { exact: true }).count(), 0);
     assert.deepEqual(await page.evaluate(key => JSON.parse(localStorage.getItem(key)).life.fourthMug, SAVE_KEY),
       { choice, day: 24 });
-    console.log(projects[0] + ' first: supper, inspection, choice, reload, sleep, return and reread passed');
+    console.log((projects[0] ?? 'cart bought afterward') + ': supper, inspection, choice, reload, sleep, return and reread passed');
     await context.close();
   }
   assert.deepEqual(errors, []);
