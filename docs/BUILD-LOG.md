@@ -14,7 +14,7 @@ The words, the tabletop and the return visit all work with sound off. A grower l
 
 The November 8 campaign asked whether a first harvest should buy glass or wheels. Green Exchange already sold both upgrades. This build gives each first choice a lasting consequence for one neighbor. Mira keeps the original work slip after both jobs are paid for. The signer remembers the work, and a piece of it turns up in a place they use every day.
 
-The opening now brings Tessa’s sunrise welcome, the walking camera, moving sky and stair railings from the exploration playtest into the public source. The opening scene is editable in Blender. The dedicated playable branch carries the self-contained browser edition.
+The opening now brings Tessa’s sunrise welcome, the walking camera, moving sky and stair railings from the exploration playtest into the public source. The opening scene is editable in Blender. The offline build packages the self-contained browser edition.
 
 [Original campaign and art](marketing/2026-11-08-original-campaign.md) · [Run the playtests](../README.md#test-and-build)
 

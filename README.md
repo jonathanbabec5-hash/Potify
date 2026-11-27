@@ -4,7 +4,7 @@
 
 You move into Apartment 7B in Canopy House. Your lease comes with six rooftop beds and a key. Grow a first crop, take it downstairs to Mira at Green Exchange, and decide what that harvest will build for the neighborhood. This is the choice described in the [original November 8 campaign](docs/marketing/2026-11-08-original-campaign.md). The game uses fictional simSOL and saves in your browser.
 
-[Download the playable edition from GitHub](https://github.com/jonathanbabec5-hash/Potify/archive/refs/heads/gh-pages.zip). On a computer, unzip it and open `index.html` in a WebGL-capable browser.
+To play offline, [build the single-file edition](#downloadable-edition) and open the resulting HTML file in a WebGL-capable browser.
 
 The opening holds on the sunrise until you turn toward Tessa for the keys. After the conversation, a high camera follows your grower. Drag to look around and move with the joystick or WASD. You can change the camera in Pause → Settings. The [editable opening scene](art-source/first-light/) sits alongside its in-game export.
 
