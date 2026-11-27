@@ -1,14 +1,15 @@
 import { crossing, stairHeight, STOREY, TOP_FLOOR } from '@/game/house';
 import { TOWER_BOUNDS, towerColliders, towerTargets } from '@/game/towerWorld';
 import { teleport } from '@/game/interact';
-import { useEffect, useMemo, useRef } from 'react';
+import { Suspense, useEffect, useMemo, useRef } from 'react';
 import { useFrame } from '@react-three/fiber';
 import { useKeyboardControls } from '@react-three/drei';
 import * as THREE from 'three';
 import { game } from '@/game/store';
 import { camCtl, joy, npcPos, player, ui, useG, useHudVisible, useUI, type Interactable, type NpcId } from '@/game/runtime';
-import { CLOSED_WARD_COLLIDERS, NPCS, PLAYER_HAIR, ROOF_BOUNDS, roofColliders, STATIC_TARGETS, TOWN_BOUNDS, TOWN_COLLIDERS, npcSchedule, zoneAt, type AABB } from '@/game/world';
+import { CLOSED_WARD_COLLIDERS, NPCS, ROOF_BOUNDS, roofColliders, STATIC_TARGETS, TOWN_BOUNDS, TOWN_COLLIDERS, npcSchedule, zoneAt, type AABB } from '@/game/world';
 import { sfx } from '@/game/audio';
+import { Resident } from './Resident';
 import { Character } from '@/scene/Character';
 
 export type Ctl = 'forward' | 'back' | 'left' | 'right' | 'run';
@@ -146,7 +147,7 @@ export function Player() {
 
   return (
     <group ref={group} visible={!firstPerson}>
-      <Character shirt={shirt} skin={skin} hair={PLAYER_HAIR} variant="player" speed={speed} />
+      {!firstPerson && <Suspense fallback={null}><Resident shirt={shirt} skin={skin} speed={speed} /></Suspense>}
     </group>
   );
 }

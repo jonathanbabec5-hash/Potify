@@ -1,3 +1,4 @@
+import { ResidentView } from '@/scene/ResidentView';
 import { devlogUrl } from '@/game/routes';
 import campaignArt from '../assets/surfaces/roof-title.webp';
 import { useState } from 'react';
@@ -100,8 +101,8 @@ export function Title() {
 
           {step === 'create' && (
             <div className="panel p-5 md:p-6 pop max-h-[78dvh] overflow-auto" data-testid="panel-create">
-              <div className="flex items-start gap-4">
-                <AvatarFigure shirt={shirt} skin={skin} size={84} />
+              <ResidentView shirt={shirt} skin={skin} />
+              <div className="flex items-start gap-4 mt-3">
                 <div className="flex-1 min-w-0">
                   <p className="text-xs font-black uppercase tracking-widest text-jade">New resident</p>
                   <label className="block font-display text-lg mt-1" htmlFor="name">Your name</label>

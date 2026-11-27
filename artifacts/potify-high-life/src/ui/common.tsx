@@ -3,7 +3,9 @@ import { X } from 'lucide-react';
 import { closeModal, useHudVisible, useUI } from '@/game/runtime';
 import { sfx } from '@/game/audio';
 import type { Resident } from '@/game/story';
-import { NPCS, PLAYER_HAIR } from '@/game/world';
+import { NPCS } from '@/game/world';
+
+import { ResidentView } from '@/scene/ResidentView';
 
 export const SHIRTS = ['#c7774f', '#f2703f', '#1f9e89', '#fbd255', '#ef6f7c', '#4c8fb0', '#8fbf4a', '#fff1d6', '#2b3a4f'];
 export const SKINS = ['#f6d2b4', '#e8b48e', '#c98b5e', '#9c6440', '#6e4429', '#4a2e1e'];
@@ -21,7 +23,8 @@ export function Swatches({ colors, value, onChange, test }: { colors: string[]; 
 }
 
 export function AvatarFigure({ shirt, skin, size = 64, variant = 'player' }: { shirt: string; skin: string; size?: number; variant?: Resident | 'player' }) {
-  const hair = variant === 'player' ? PLAYER_HAIR : NPCS[variant].hair;
+  if (variant === 'player') return <ResidentView shirt={shirt} skin={skin} compact={size} />;
+  const hair = NPCS[variant].hair;
   return (
     <svg width={size} height={size} viewBox="0 0 64 64" aria-hidden="true" className="shrink-0 rounded-2xl bg-[#dfc79c] border-[2.5px] border-ink">
       <path d="M12 64 15 49 24 42 40 42 49 49 52 64Z" fill={shirt} stroke="#473b37" strokeWidth="2" />
@@ -36,7 +39,6 @@ export function AvatarFigure({ shirt, skin, size = 64, variant = 'player' }: { s
       <rect x="24" y="27" width="4" height="6" rx="1" fill="#2d2530" />
       <rect x="36" y="27" width="4" height="6" rx="1" fill="#2d2530" />
       <path d="M29 36Q32 38 35 36" fill="none" stroke="#8f4d4b" strokeWidth="1.5" strokeLinecap="round" />
-      {variant === 'player' && <path d="M16 20 18 12 28 7 41 8 47 15 48 18 53 22 44 24 32 20Z" fill="#666045" stroke="#473b37" strokeWidth="1.5" />}
       {variant === 'mira' && (
         <>
           <path d="M17 25 15 36 20 42 23 39 22 25M47 25 50 35 47 42 43 39 44 24" fill={hair} />

@@ -1,6 +1,6 @@
 // After npm run build:offline, use Node 24 with Playwright and its Chromium installed.
 // PROFILE_SECONDS=60 lengthens each route. --check enforces a 30 FPS average
-// per route. The separately reported p95 exposes hitches hidden by an average.
+// per route. Pass --resident to walk with the third-person character visible. The separately reported p95 exposes hitches hidden by an average.
 import assert from 'node:assert/strict';
 import { createRequire } from 'node:module';
 import { resolve } from 'node:path';
@@ -68,7 +68,7 @@ try {
       plots: Array.from({ length: 8 }, (_, id) => ({
         id, strain: ['sunhaze', 'moonmint', 'amber'][id % 3], growth: 100, health: 90, water: 65, fed: true,
       })),
-      settings: { ...save.settings, muted: true, music: false, camera: 1, quality: 'high' },
+      settings: { ...save.settings, muted: true, music: false, camera: args.includes('--resident') ? 0 : 1, quality: 'high' },
     });
     await page.addInitScript(({ key, save }) => localStorage.setItem(key, JSON.stringify(save)), { key: SAVE_KEY, save });
     await page.addInitScript(installMeter);

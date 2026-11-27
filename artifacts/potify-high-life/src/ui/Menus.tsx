@@ -1,3 +1,4 @@
+import { ResidentView } from '@/scene/ResidentView';
 import { lastFrameReport } from '@/game/frameBudget';
 import { houseDate } from '@/game/house';
 import { HousePanel, NeighborVisit, TowerDirectory } from './House';
@@ -661,8 +662,8 @@ function AvatarPanel() {
   const [skin, setSkin] = useState(cur.skin);
   return (
     <Sheet title="Wardrobe" kicker="Change your look anytime" accent="bg-coral" test="modal-avatar">
-      <div className="flex gap-4 items-center">
-        <AvatarFigure shirt={shirt} skin={skin} size={96} />
+      <ResidentView shirt={shirt} skin={skin} />
+      <div className="flex gap-4 items-center mt-3">
         <div className="flex-1">
           <label className="font-display" htmlFor="avatar-name">Name</label>
           <input id="avatar-name" value={name} maxLength={20} onChange={e => setName(e.target.value)} data-testid="input-avatar-name"
