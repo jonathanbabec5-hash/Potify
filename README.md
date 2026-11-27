@@ -31,6 +31,10 @@ PORT=5173 BASE_PATH=/ pnpm --filter @workspace/potify-high-life dev
 
 Open http://localhost:5173. Create a grower, plant your first seed and water it. Return in the same browser to check your plot. For game logic, start with `artifacts/potify-high-life/src/game/store.ts`. The scene, user interface and developer log live under the same application's `src/` directory.
 
+## Downloadable edition
+
+Run `pnpm --filter @workspace/potify-high-life build:offline` to package the game, artwork, and devlog in one HTML file under `artifacts/potify-high-life/dist/offline/`. Open the file in a WebGL-capable browser. Keep it at the same path to continue its local save.
+
 ## Test and build
 
 ```sh

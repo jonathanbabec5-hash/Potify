@@ -1,3 +1,4 @@
+import { gameUrl } from '@/game/routes';
 import { useEffect } from 'react';
 import { ArrowDown, ArrowLeft, ArrowUpRight, BookOpen, Sprout } from 'lucide-react';
 import { devlogChangelog, devlogDisclosure, devlogSections } from '@/content/devlogRegistry';
@@ -32,14 +33,14 @@ export default function Devlog() {
     <main className="devlog-page">
       <div className="devlog-grain" aria-hidden="true" />
       <header className="devlog-header">
-        <a className="devlog-wordmark" href="/" aria-label="Return to POTIFY game">
+        <a className="devlog-wordmark" href={gameUrl} aria-label="Return to POTIFY game">
           <span className="wordmark-mark"><Sprout size={17} strokeWidth={1.7} /></span>
           <span>POTIFY <i>field notes</i></span>
         </a>
         <a className="return-link feedback-nav" href="#feedback">
           Open questions <ArrowDown size={14} aria-hidden="true" />
         </a>
-        <a className="return-link" href="/">
+        <a className="return-link" href={gameUrl}>
           <ArrowLeft size={16} aria-hidden="true" />
           <span>Return to the game</span>
           <ArrowUpRight size={14} className="return-out" aria-hidden="true" />
@@ -159,7 +160,7 @@ export default function Devlog() {
 
       <footer className="devlog-footer">
         <div className="footer-top">
-          <a className="footer-return" href="/"><ArrowLeft size={16} aria-hidden="true" /> Back to POTIFY</a>
+          <a className="footer-return" href={gameUrl}><ArrowLeft size={16} aria-hidden="true" /> Back to POTIFY</a>
           <span className="footer-mark">A WONDERFUL HIGH LIFE <i>·</i> PUBLIC NOTES</span>
         </div>
         <p className="disclosure">{devlogDisclosure}</p>

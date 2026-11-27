@@ -1,3 +1,4 @@
+import { devlogUrl } from '@/game/routes';
 import { useState } from 'react';
 import { BookOpen, Droplets, Heart, Leaf, Lock, Moon, Package, Save, Scissors, Sparkles, Sprout } from 'lucide-react';
 import { WAREHOUSE, DELIVERY_STOPS, PROJECTS, projectPrice, type RoofProject, ECONOMY, SEEDS, UPGRADES, game, harvestValue, objective, formatTime } from '@/game/store';
@@ -754,7 +755,7 @@ function Pause() {
     ['Settings', () => openModal({ type: 'settings' }), 'O'],
     ['Roadmap', () => openModal({ type: 'roadmap' }), ''],
     ['Save game', () => act(() => game.save()), ''],
-    ['City Devlog', () => { game.save(); window.location.assign(`${import.meta.env.BASE_URL}devlog/`); }, ''],
+    ['City Devlog', () => { game.save(); window.location.assign(devlogUrl); }, ''],
     ['Title screen', () => { game.save(); ui.set({ modal: null, inGame: false }); }, ''],
   ];
   return (

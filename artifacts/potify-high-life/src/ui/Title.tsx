@@ -1,3 +1,4 @@
+import { devlogUrl } from '@/game/routes';
 import campaignArt from '../../../../docs/marketing/assets/2026-11-08-potify-city-concept.jpg';
 import { useState } from 'react';
 import { ArrowRight, Check, Play, RotateCcw, Sprout } from 'lucide-react';
@@ -66,7 +67,7 @@ export function Title() {
                 Fictional, cannabis-themed simulation for adults. simSOL is play money with no real value. Saves stay in this browser only.
               </p>
               <a
-                href={`${import.meta.env.BASE_URL}devlog/`}
+                href={devlogUrl}
                 className="mt-4 inline-flex min-h-11 items-center justify-center rounded-xl border-2 border-ink/20 px-4 py-2 text-sm font-black text-foreground underline-offset-4 hover:underline focus-visible:outline focus-visible:outline-3 focus-visible:outline-offset-2 focus-visible:outline-foreground"
               >
                 City Devlog · Build in Public
