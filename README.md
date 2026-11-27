@@ -20,6 +20,8 @@ The market-square board carries signed crop orders and festival invitations. Ups
 
 ## Life in Canopy House
 
+[Roof 7B concept art for the next 3D modeling pass](docs/concept-art/canopy-house/README.md) covers the rooftop, grow workroom, plant forms and workshop props.
+
 Apartment 7B is on the seventh floor. Leave the lease table and head east to the lift, or climb the right-hand stair flight, turn at the window, and take the left flight back to the next hall. Every landing from 1 through 24 is walkable. The last flight opens onto the growing roof. Your position saves mid-climb.
 
 | Floor | What happens there |
