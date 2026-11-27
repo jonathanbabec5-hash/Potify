@@ -443,3 +443,49 @@ test('saving a studio haircut preserves newer progress from another tab', async 
   assert.equal(saved.hairStyle, 'coils');
   assert.equal(saved.wearsCap, false);
 });
+
+test('the fourth-floor mug remembers either harvest supper and one choice across days and reloads', async () => {
+  const { fourthMugOpening, MUG_SCENE, hasFourthMugSupper } = await import('../fourthMug.ts');
+  assert.equal(hasFourthMugSupper({ 0: 1, 1: 0, 3: 1 }), false);
+  assert.equal(hasFourthMugSupper({ 6: 0 }), true, 'a later year can be the first supper');
+  const kitchen = { zone: 'tower', floor: 4, x: -4.35, z: 2.68 };
+  for (const [meal, choice] of [[0, 'tea'], [1, 'please']]) {
+    localStorage.removeItem(SAVE_KEY);
+    const { game: resident } = await import('../store.ts?mug-' + meal);
+    resident.start();
+    resident.setPosition(kitchen);
+    assert.equal(resident.rememberFourthMug(choice), false);
+    while (resident.getState().day < 24) resident.sleep();
+    assert.equal(resident.celebrate(meal), true, 'attend the existing autumn festival');
+    const supper = resident.getState().life.festivals;
+    for (const first of ['glasshouse', 'cart', undefined]) {
+      const opening = fourthMugOpening(supper, first);
+      assert.ok(opening.includes(MUG_SCENE.supper[meal === 0 ? 'table' : 'bowls']));
+      assert.ok(opening.includes(MUG_SCENE.project[first ?? 'none']));
+    }
+    resident.setPosition({ ...kitchen, floor: 7 });
+    assert.equal(resident.rememberFourthMug(choice), false);
+    resident.setPosition(kitchen);
+    assert.equal(resident.rememberFourthMug('unknown'), false);
+    const before = resident.getState();
+    assert.equal(before.life.partner, null);
+    assert.equal(validateSave(before), true, 'original saves with no mug field still load');
+    assert.equal(resident.rememberFourthMug(choice), true);
+    const after = resident.getState();
+    assert.deepEqual(after.life, { ...before.life, fourthMug: { choice, day: 24 } });
+    for (const key of ['projects', 'money', 'seeds', 'friendship', 'quest']) {
+      assert.deepEqual(after[key], before[key]);
+    }
+    assert.equal(resident.rememberFourthMug(choice === 'tea' ? 'please' : 'tea'), false);
+    const { game: restored } = await import('../store.ts?mug-reload-' + meal);
+    assert.deepEqual(restored.getState().life.fourthMug, { choice, day: 24 });
+    restored.sleep();
+    assert.equal(restored.getState().day, 25);
+    assert.equal(restored.rememberFourthMug(choice), false);
+    const nextDay = restored.getState();
+    assert.equal(validateSave(nextDay), true);
+    for (const invalid of [{ choice: 'none', day: 24 }, { choice, day: 23 }, { choice, day: 26 }]) {
+      assert.equal(validateSave({ ...nextDay, life: { ...nextDay.life, fourthMug: invalid } }), false);
+    }
+  }
+});

@@ -1,3 +1,9 @@
+# November 27, 2026 · Supper on four
+
+At the common kitchen in Canopy House, Tessa remembers someone who used to come down late for tea. A grower who helped at the autumn supper can inspect the table, recall how they helped, and make a small choice of their own. On a later day the counter tells the rest of that story. The scene also remembers what the grower bought with the first harvest.
+
+The words, the tabletop and the return visit all work with sound off. A grower living alone can see the whole scene. It uses the existing local save.
+
 # November 27, 2026 · First Light and the first harvest
 
 The November 8 campaign asked whether a first harvest should buy glass or wheels. Green Exchange already sold both upgrades. This build gives each first choice a lasting consequence for one neighbor. Mira keeps the original work slip after both jobs are paid for. The signer remembers the work, and a piece of it turns up in a place they use every day.

@@ -15,7 +15,7 @@ export type NpcId = Resident;
 export type Modal =
   | null
   | { type: 'pause' | 'inventory' | 'avatar' | 'map' | 'calendar' | 'settings' | 'roadmap' | 'sleep' | 'field-notes' | 'cart' | 'warehouse-lease' | 'freight' }
-  | { type: 'house'; room: 'lift' | 'album' | 'festival' | 'archive' | 'record' | 'doors' | 'commons' | 'town-board' }
+  | { type: 'house'; room: 'lift' | 'album' | 'fourth-mug' | 'festival' | 'archive' | 'record' | 'doors' | 'commons' | 'town-board' }
   | { type: 'neighbor'; who: Neighbor; line: string }
   | { type: 'bed'; index: number }
   | { type: 'shop'; shop: ShopId }

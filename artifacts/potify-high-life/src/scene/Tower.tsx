@@ -2,12 +2,13 @@ import { LeaseApartment, LoftWindows, WindowLight } from './LeaseApartment';
 import { SurfaceBlock } from './Surfaces';
 import { SolidSurfaces } from './SolidSurfaces';
 import { useRef } from 'react';
-import { DoubleSide, Quaternion, Vector3 } from 'three';
+import { DoubleSide, LatheGeometry, Quaternion, Vector2, Vector3 } from 'three';
 import { useTexture } from '@react-three/drei';
 import housePrint from '../../../../docs/marketing/assets/2026-11-08-potify-city-concept.jpg';
 import { useG, useUI } from '@/game/runtime';
 import { PEOPLE, NEIGHBORS, STOREY, STAIR_START, TURN, floorName, houseDate, childStage } from '@/game/house';
 import { residentX } from '@/game/house';
+import { hasFourthMugSupper, type MugChoice } from '@/game/fourthMug';
 import { hasLandingBoard } from '@/game/notices';
 import { personFloor } from '@/game/towerWorld';
 import { mat, signTex, windowMat } from './materials';
@@ -158,11 +159,108 @@ function Doors({ floor }: { floor: number }) {
     </>
   );
 }
+
+const mugProfile = [
+  new Vector2(0, 0.006), new Vector2(0.098, 0.006), new Vector2(0.127, 0.055),
+  new Vector2(0.135, 0.214), new Vector2(0.13, 0.228), new Vector2(0.115, 0.228),
+  new Vector2(0.11, 0.2), new Vector2(0.096, 0.043), new Vector2(0, 0.043),
+];
+const plateProfile = [
+  new Vector2(0, 0.003), new Vector2(0.14, 0.003), new Vector2(0.24, 0.03),
+  new Vector2(0.24, 0.048), new Vector2(0.215, 0.049), new Vector2(0.145, 0.022), new Vector2(0, 0.022),
+];
+
+function chipMugRim(geometry: LatheGeometry) {
+  const positions = geometry.attributes.position;
+  for (let i = 0; i < positions.count; i++) {
+    const height = mugProfile[i % mugProfile.length].y;
+    if (height < 0.2) continue;
+    const angle = Math.atan2(positions.getX(i), positions.getZ(i));
+    const depth = Math.max(0, 1 - Math.abs(angle - Math.PI / 5) / 0.48);
+    positions.setY(i, height - 0.056 * depth);
+  }
+  positions.needsUpdate = true;
+  geometry.computeVertexNormals();
+}
+
+function KitchenMug({ color, chipped = false }: { color: string; chipped?: boolean }) {
+  return <group scale={chipped ? 1.25 : 1}>
+    <mesh material={mat(color)} castShadow receiveShadow>
+      <latheGeometry args={[mugProfile, 20]} onUpdate={chipped ? chipMugRim : undefined} />
+    </mesh>
+    <mesh position={[0.146, 0.122, 0]} scale={[0.85, 1.06, 1]} material={mat(color)} castShadow receiveShadow>
+      <torusGeometry args={[0.079, 0.022, 5, 12]} />
+    </mesh>
+  </group>;
+}
+
+function SupperTable({ afterSupper, later }: { afterSupper: boolean; later?: MugChoice }) {
+  const blueOnTable = afterSupper && later !== 'tea';
+  return <group name="KitchenSupperTable" position={[-6.38, 0, 2.68]}>
+    <SolidSurfaces revision={String(blueOnTable)}>
+      <SurfaceBlock at={[0, 0.79, 0]} size={[3.24, 0.12, 1.3]} finish="cedar" tile={1.5} />
+      {[-1.14, 1.14].map(x => <group key={x}>
+        <Box at={[x, 0.41, 0]} size={[0.18, 0.65, 0.34]} color="#786446" />
+        <Box at={[x, 0.09, 0]} size={[0.25, 0.12, 0.96]} color="#786446" />
+      </group>)}
+      <Box at={[0, 0.25, 0]} size={[2.5, 0.12, 0.1]} color="#715b40" />
+      <Box at={[0, 0.856, 0]} size={[3.19, 0.012, 0.29]} color="#ae986b" />
+      <group name="SpareKitchenChair" position={[1.05, 0, 0.44]}>
+        <Box at={[0, 0.44, 0]} size={[0.52, 0.07, 0.43]} color="#647567" />
+        {[-0.2, 0.2].map(x => <group key={x}>
+          <Box at={[x, 0.22, -0.16]} size={[0.055, 0.44, 0.055]} color="#6d604b" />
+          <Box at={[x, 0.48, 0.19]} size={[0.055, 0.96, 0.055]} color="#6d604b" />
+        </group>)}
+        <Box at={[0, 0.91, 0.19]} size={[0.47, 0.12, 0.056]} color="#687b6a" />
+      </group>
+      {([
+        [-1.03, -0.29, '#a36b4d'], [0.40, -0.29, '#7b8467'], [-0.84, 0.3, '#d6bb8e'],
+      ] as const).map(([x, z, glaze]) => <group key={x} position={[x, 0.855, z]}>
+        <mesh material={mat('#dfd2b1')} castShadow receiveShadow><latheGeometry args={[plateProfile, 20]} /></mesh>
+        <group position={[0.41, 0.007, 0]} rotation-y={z < 0 ? -0.4 : 0.6}><KitchenMug color={glaze} /></group>
+      </group>)}
+      {blueOnTable && <group name="ChippedBlueMug" position={[1.18, 0.852, 0.3]}>
+        <KitchenMug color="#4b84ab" chipped />
+      </group>}
+    </SolidSurfaces>
+  </group>;
+}
+
+function SupperCounter({ later }: { later?: MugChoice }) {
+  return <SolidSurfaces revision={later ?? ''}>
+    <group position={[-2.12, 1.02, -4.48]}>
+      <mesh position-y={0.16} material={mat('#829388')} castShadow receiveShadow>
+        <cylinderGeometry args={[0.166, 0.156, 0.32, 12]} />
+      </mesh>
+      <mesh position-y={0.33} material={mat('#baa882')} castShadow receiveShadow>
+        <cylinderGeometry args={[0.17, 0.17, 0.033, 12]} />
+      </mesh>
+      {later === 'please' && <group position={[0.2, 0.12, 0.02]} rotation={[-0.23, -0.25, -0.25]}>
+        <Box at={[0, 0, 0]} size={[0.25, 0.22, 0.026]} color="#e6c88b" />
+        <Box at={[0, 0.07, 0.017]} size={[0.22, 0.026, 0.015]} color="#b9945f" />
+        <Box at={[0, 0.046, 0.028]} size={[0.34, 0.014, 0.016]} color="#826146" />
+      </group>}
+    </group>
+    <Box at={[-2.34, 2.05, -5.44]} size={[0.14, 0.14, 0.11]} color="#786348" />
+    <Box at={[-2.34, 2.05, -5.28]} size={[0.046, 0.046, 0.29]} color="#a18e65" />
+    {later === 'tea' && <>
+      <group position={[-2.48, 1.885, -5.22]} rotation-z={0.2}><KitchenMug color="#4b84ab" chipped /></group>
+      <group position={[-1.52, 1.025, -4.48]}>
+        <KitchenMug color="#bcae83" />
+        <mesh position-y={0.256} rotation-x={Math.PI} scale={0.74} material={mat('#e2d9bf')} castShadow receiveShadow>
+          <latheGeometry args={[plateProfile, 20]} />
+        </mesh>
+      </group>
+    </>}
+  </SolidSurfaces>;
+}
+
 function Room({ floor, archive }: { floor: number; archive: boolean }) {
   const firstProject = useG(s => s.projects[0]);
   const albums = useG((s) => Object.keys(s.life.festivals).length);
   const family = useG((s) => s.life);
   const day = useG((s) => s.day);
+  const laterMugChoice = family.fourthMug && day > family.fourthMug.day ? family.fourthMug.choice : undefined;
   const still = useRef(0);
   if (floor === 7)
     return (
@@ -199,6 +297,8 @@ function Room({ floor, archive }: { floor: number; archive: boolean }) {
   if (floor === 4)
     return (
       <>
+        <SupperTable afterSupper={hasFourthMugSupper(family.festivals)} later={laterMugChoice} />
+        <SupperCounter later={laterMugChoice} />
         <Box at={[-4.5, 0.51, -4.86]} size={[7.6, 1.02, 1.25]} color="#9d8f72" />
         {[-7.2, -6, -4.8, -3.6, -2.4].map((x, i) => (
           <mesh key={x} position={[x, 1.2, -4.85]} material={mat(i % 2 ? '#a76740' : '#617763')}>

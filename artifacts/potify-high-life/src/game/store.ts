@@ -1,5 +1,6 @@
 import { HIGH_CAMERA } from './opening.ts';
 import { CAMPAIGN_SHIRT, CAMPAIGN_SKIN, ORIGINAL_LOOK, readHeadLook, type HeadLook } from './appearance.ts';
+import { validFourthMug, type MugChoice } from './fourthMug.ts';
 import { freshLife, validLife, validFloor, childStage, houseDate, NEIGHBORS, PASTIMES, PEOPLE, meetingFloor, type Neighbor, type Pastime, type HouseLife } from './house.ts';
 import { useSyncExternalStore } from 'react';
 import { chooseStory, freshStory, readStory, validateStory, type ChoiceId, type Resident, type StoryItem, type StoryProgress } from './story.ts';
@@ -489,6 +490,14 @@ export const game = {
     if ((choice !== 0 && choice !== 1) || !date.active || state.position.zone !== 'tower' ||
         state.position.floor !== date.festival.floor || Object.hasOwn(state.life.festivals, date.key)) return false;
     commit({ ...state, life: { ...state.life, festivals: { ...state.life.festivals, [date.key]: choice } } });
+    return true;
+  },
+  rememberFourthMug(choice: MugChoice): boolean {
+    const { life, position, day } = state;
+    const memory = { choice, day };
+    if (position.zone !== 'tower' || position.floor !== 4 || life.fourthMug ||
+        !validFourthMug(memory, life.festivals, day)) return false;
+    commit({ ...state, life: { ...life, fourthMug: memory } });
     return true;
   },
   openArchive(): boolean {

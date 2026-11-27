@@ -1,3 +1,5 @@
+import { validFourthMug, type FourthMugMemory } from './fourthMug.ts';
+
 export const TOP_FLOOR = 24;
 export const STOREY = 3.6;
 export const STAIR_START = 1;
@@ -171,6 +173,7 @@ export interface HouseLife {
   archiveOpen: boolean;
   moments: Partial<Record<Neighbor, 0 | 1>>;
   festivals: Record<string, 0 | 1>;
+  fourthMug?: FourthMugMemory;
 }
 export function freshLife(): HouseLife {
   return {
@@ -245,6 +248,7 @@ export function validLife(value: unknown, day: number): value is HouseLife {
     )
   )
     return false;
+  if (!validFourthMug(s.fourthMug, s.festivals, day)) return false;
   const c = s.child;
   return (
     c === null ||

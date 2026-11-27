@@ -18,6 +18,7 @@ import {
   type Neighbor,
   type Pastime,
 } from '@/game/house';
+import { MUG_SCENE, fourthMugOpening, type MugChoice } from '@/game/fourthMug';
 import { landingNotice, townNotices } from '@/game/notices';
 import { Sheet } from './common';
 
@@ -361,6 +362,47 @@ function Commons() {
   );
 }
 
+function FourthMug() {
+  const memory = useG(s => s.life.fourthMug);
+  const day = useG(s => s.day);
+  const opening = useG(s => fourthMugOpening(s.life.festivals, s.projects[0]));
+  if (!opening.length) return null;
+  const paragraphs = opening.map(line => <p key={line} className="mb-3 leading-relaxed">{line}</p>);
+  if (memory) {
+    return (
+      <>
+        <p className="leading-relaxed" role="status" data-testid="mug-memory">
+          {day === memory.day ? MUG_SCENE.replies[memory.choice] : MUG_SCENE.later[memory.choice]}
+        </p>
+        <details className="mt-4">
+          <summary className="cursor-pointer py-3 font-bold">Remember that supper</summary>
+          {paragraphs}
+          <p className="font-bold">{MUG_SCENE.choices[memory.choice]}</p>
+          {day !== memory.day && <p className="mt-2 leading-relaxed">{MUG_SCENE.replies[memory.choice]}</p>}
+        </details>
+      </>
+    );
+  }
+  return (
+    <>
+      {paragraphs}
+      <div className="grid gap-2 mt-4">
+        {(Object.keys(MUG_SCENE.choices) as MugChoice[]).map(choice => (
+          <button
+            key={choice}
+            type="button"
+            className={button}
+            data-testid={'mug-' + choice}
+            onClick={() => game.rememberFourthMug(choice)}
+          >
+            {MUG_SCENE.choices[choice]}
+          </button>
+        ))}
+      </div>
+    </>
+  );
+}
+
 function Festival() {
   const day = useG((s) => s.day),
     life = useG((s) => s.life);
@@ -417,6 +459,7 @@ export function HousePanel({ room }: { room: Room }) {
   const names = {
     lift: 'Passenger lift',
     album: 'Household album',
+    'fourth-mug': MUG_SCENE.title,
     festival: houseDate(day).festival.title,
     archive: 'The biscuit-tin archive',
     record: 'Canal FM tape booth',
@@ -437,6 +480,8 @@ export function HousePanel({ room }: { room: Room }) {
         <Lift />
       ) : room === 'album' ? (
         <Album />
+      ) : room === 'fourth-mug' ? (
+        <FourthMug />
       ) : room === 'festival' ? (
         <Festival />
       ) : room === 'doors' || room === 'town-board' ? (

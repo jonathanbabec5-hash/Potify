@@ -1,6 +1,7 @@
 import type { GameState } from './store';
 import type { Interactable } from './runtime';
 import type { AABB } from './world';
+import { hasFourthMugSupper } from './fourthMug';
 import { hasLandingBoard } from './notices';
 import { NEIGHBORS, PEOPLE, houseDate, meetingFloor, residentX } from './house';
 
@@ -12,7 +13,9 @@ const CORE: AABB[] = [
   [-8.3, -0.9, -5.5, -4.05],
   [-0.15, 1.65, 1.5, 1.8], // lift jamb and doors
 ];
+const KITCHEN: AABB[] = [...CORE, [-8, -4.76, 2.03, 3.33]];
 export function towerColliders(floor: number, open: boolean): AABB[] {
+  if (floor === 4) return KITCHEN;
   if (floor !== 12) return CORE;
   return [
     ...CORE,
@@ -48,6 +51,10 @@ export function towerTargets(
       site('flat-album', 'house', -1.6, -3.65, 'Household album', 'Open', { room: 'album' }),
       site('flat-radio', 'story-item', -7.35, 1, 'Broadcast log', 'Read', { storyItem: 'signal' }),
     );
+  if (floor === 4 && hasFourthMugSupper(state.life.festivals)) {
+    const label = state.life.fourthMug ? 'Supper table' : 'Blue kitchen mug';
+    list.push(site('house-fourth-mug', 'house', -4.35, 2.68, label, 'Inspect', { room: 'fourth-mug' }));
+  }
   if (floor === 21)
     list.push(
       site('house-commons', 'house', -4.5, -3.55, 'Residents’ commons', 'Visit', { room: 'commons' }),
