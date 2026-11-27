@@ -1,8 +1,8 @@
 import { useState } from 'react';
 import { game } from '@/game/store';
-import { closeModal, toast, ui, useG, useUI, type Modal } from '@/game/runtime';
+import { closeModal, openModal, toast, useG, useUI, type Modal } from '@/game/runtime';
 import { teleport } from '@/game/interact';
-import { sfx } from '@/game/audio';
+import { RECORD_TITLE, restartRecord, sfx } from '@/game/audio';
 import {
   NEIGHBORS,
   FRIEND_SCENES,
@@ -18,18 +18,26 @@ import {
   type Neighbor,
   type Pastime,
 } from '@/game/house';
+import { landingNotice, townNotices } from '@/game/notices';
 import { Sheet } from './common';
 
 type Room = Extract<Modal, { type: 'house' }>['room'];
 const button = 'chunk bg-butter px-4 py-3 text-left';
-const papers = [
-  'If you have my missing blue sock, keep it. The other one is on floor nine and they clearly wanted different things.',
-  'The canal used to freeze. Ask someone who remembers. Leave room for the part they get wrong.',
-  'Plant sitter available weekends. References include a ficus that has outlived two landlords.',
-  'Lost a record sleeve somewhere between the lift and my front door. Found a better record inside the replacement. Consider the case closed.',
-  'Night shift sleeps until four. If you are learning trumpet, we admire your ambition from a distance.',
-  'The radiator on this floor makes two knocks before dawn. It has done that since the canal gates closed.',
-];
+function Notices({ town, floor }: { town: boolean; floor: number }) {
+  const notices = useG(s => town ? townNotices(s) : [landingNotice(floor, s)]);
+  return (
+    <div className="grid gap-3">
+      {notices.map(note => note && (
+        <article key={note.title} className="border-l-4 border-jade bg-[#f6ebd1] px-4 py-3 text-[#342f25]">
+          <h3 className="font-display text-xl leading-tight">{note.title}</h3>
+          <p className="my-2 leading-relaxed">{note.body}</p>
+          <p className="text-sm font-bold text-[#49563b]">— {note.signed}</p>
+        </article>
+      ))}
+      {town && <button className={button} onClick={() => openModal({ type: 'map' })}>Open neighborhood map</button>}
+    </div>
+  );
+}
 
 function Lift() {
   const current = useUI((s) => s.floor);
@@ -283,6 +291,14 @@ function Album() {
   );
 }
 
+function PlayRecord() {
+  const muted = useG(s => s.settings.muted);
+  return <button className={button + ' mt-3'} onClick={() => {
+    game.setSettings({ music: true, muted: false });
+    restartRecord();
+  }}>{muted ? 'Unmute and play' : 'Play'} {RECORD_TITLE}</button>;
+}
+
 function Commons() {
   const life = useG((s) => s.life),
     day = useG((s) => s.day);
@@ -319,15 +335,9 @@ function Commons() {
     return (
       <>
         <p className="mb-3">
-          Two reels sit on the listening bench. The neighbors have written the track names by hand.
+          Jun has filed the Grow Room recording under POTIFY. The sleeve is soft at the corners from passing between apartments.
         </p>
-        <div className="grid gap-2">
-          {['Pipework in D', 'Last Ferry Home'].map((title, i) => (
-            <button key={title} className={button} onClick={() => sfx.record(i)}>
-              {title} · Play recording
-            </button>
-          ))}
-        </div>
+        <PlayRecord />
       </>
     );
   return (
@@ -373,7 +383,7 @@ function Festival() {
               data-testid={'festival-' + i}
               onClick={() => {
                 if (game.celebrate(i as 0 | 1)) {
-                  date.index === 1 ? sfx.record(i) : sfx.talk();
+                  sfx.talk();
                 }
               }}
             >
@@ -411,12 +421,13 @@ export function HousePanel({ room }: { room: Room }) {
     archive: 'The biscuit-tin archive',
     record: 'Canal FM tape booth',
     commons: 'Residents’ commons',
-    doors: 'On the noticeboard',
+    doors: 'Landing notices',
+    'town-board': 'Community board',
   };
   return (
     <Sheet
       title={names[room]}
-      kicker={'Canopy House · Floor ' + floor}
+      kicker={room === 'town-board' ? 'Canopy Quarter · Market square' : 'Canopy House · Floor ' + floor}
       test={'modal-house-' + room}
       accent="bg-jade"
     >
@@ -428,16 +439,14 @@ export function HousePanel({ room }: { room: Room }) {
         <Album />
       ) : room === 'festival' ? (
         <Festival />
-      ) : room === 'doors' ? (
-        <p>{papers[(floor - 1) % papers.length]}</p>
+      ) : room === 'doors' || room === 'town-board' ? (
+        <Notices town={room === 'town-board'} floor={floor} />
       ) : room === 'record' ? (
         <>
           <p>
-            Jax’s reel is marked “west stair, after rain.” Under the melody you can hear somebody coming home.
+            Jun marked this copy “7B” before sending it up from Low Tide. Jax has it cued at the start of the Grow Room recording.
           </p>
-          <button className={button + ' mt-3'} onClick={() => sfx.record(1)}>
-            Play the house tape
-          </button>
+          <PlayRecord />
         </>
       ) : (
         <>

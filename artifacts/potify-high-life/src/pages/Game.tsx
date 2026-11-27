@@ -91,7 +91,7 @@ export default function GamePage() {
   const [webgl] = useState(() => hasWebGL());
   const touch = typeof window !== 'undefined' && window.matchMedia('(pointer: coarse)').matches;
 
-  useEffect(() => { configureAudio({ muted, music }); }, [muted, music]);
+  useEffect(() => { configureAudio({ muted, music }, inGame); }, [muted, music, inGame]);
 
   if (!webgl) return <Recovery title="3D isn't available here" body="This browser or device has WebGL turned off. Try a recent Chrome, Firefox, Safari or Edge, or enable hardware acceleration." />;
 

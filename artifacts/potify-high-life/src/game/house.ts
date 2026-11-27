@@ -58,7 +58,7 @@ export const FESTIVALS = [
     floor: 4,
     color: '#cf855a',
     detail:
-      'Someone has brought twelve spoons and one bowl. Tessa gives you a chalk pencil for the supper board.',
+      'Tessa has the first pot of stew ready. Some of the growers are still upstairs bringing in the last cut. “Can you give me a hand before it gets cold?”',
     choices: ['Set a long table', 'Pack bowls for late shifts'],
     memories: [
       'Dinner stretched all the way to the lift.',
@@ -103,7 +103,7 @@ export const PEOPLE = {
     job: 1,
     rest: 4,
     lines: [
-      'I keep the spare keys in the sugar tin. Nobody here takes sugar. Please don’t be the person who changes that.',
+      'You must be the new grower in 7B. I put a clean mug in the kitchen on four for you. Last person through makes the next pot.',
       'When I got here I could tell who was home by the sound of the lift. It needed oil. I let it squeak for another week.',
       'There’s a mug up there with your name on it. Written underneath. Didn’t want to make a whole thing of it.',
     ],
@@ -118,7 +118,7 @@ export const PEOPLE = {
     job: 18,
     rest: 12,
     lines: [
-      'Floor twelve says their radiator sings. Took my wrench up there and found four people waiting to hear the second verse.',
+      'That dent in my toolbox is from hauling greenhouse glass up twenty-four flights. First thing I fixed after that was the lift.',
       'See that worn patch? My dad rested his thumb there when he taught me to solder. I reach for the very same spot.',
       'I made you a key for the archive cabinet. The old roof plans survived a leak because somebody stored them in a biscuit tin.',
     ],
@@ -134,8 +134,8 @@ export const PEOPLE = {
     job: 24,
     rest: 4,
     lines: [
-      'You’re the new grower? Good. I’ve been winning the window-box prize by default. It was getting embarrassing.',
-      'My first season up here I grew one decent leaf. Framed it. Told visitors I was into minimalism.',
+      'So you’ve got 7B. Good. I’ve been trying to settle an argument about which roof gets the last light. Come up to the rail one evening.',
+      'My first Moonmint up here barely filled the jar. I still wrote the date on the lid. I like knowing where I started.',
       'Left the window seat free for you. Best part of this roof comes after the work is finished.',
     ],
     together:

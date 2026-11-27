@@ -4,11 +4,11 @@ import { devlogUrl } from '@/game/routes';
 import { useState } from 'react';
 import { BookOpen, Droplets, Heart, Leaf, Lock, Moon, Package, Save, Scissors, Sparkles, Sprout } from 'lucide-react';
 import { WAREHOUSE, DELIVERY_STOPS, PROJECTS, projectPrice, type RoofProject, ECONOMY, SEEDS, UPGRADES, game, harvestValue, objective, formatTime } from '@/game/store';
-import { act, closeModal, fx, openModal, player, toast, ui, useG, useUI, type NpcId, type ShopId } from '@/game/runtime';
+import { act, closeModal, fx, openModal, player, toast, ui, useG, useHudVisible, useUI, type NpcId, type ShopId } from '@/game/runtime';
 import { FILED_NOTES, SIDE_TASKS, STORY_PAGES, storyChoices, storyLine, storyObjective, type SideTask, type StoryPage } from '@/game/story';
 import { BEDS, NPCS, SHOPS, npcSchedule } from '@/game/world';
 import { doSleep } from '@/game/interact';
-import { sfx } from '@/game/audio';
+import { RECORD_TITLE, sfx } from '@/game/audio';
 import { CAMERA_PRESETS } from '@/scene/GameCanvas';
 import { AvatarFigure, Kbd, Meter, SHIRTS, SKINS, Sheet, Sim, Swatches } from '@/ui/common';
 
@@ -108,9 +108,9 @@ function BedPanel({ index }: { index: number }) {
 /* ---------------- Shops ---------------- */
 const SHOP_COPY: Record<ShopId, { kicker: string; blurb: string; accent: string }> = {
   seed: { kicker: 'Seed packets and a pirate radio upstairs', blurb: 'Mira hand-labels every packet. All cultivars are fictional.', accent: 'bg-jade' },
-  rootworks: { kicker: 'Soil, tools and Moss’s strong opinions', blurb: 'Soil nourishment and equipment upgrades for your roof.', accent: 'bg-coral' },
+  rootworks: { kicker: 'Moss’s soil and tool shop', blurb: 'Soil nourishment and equipment upgrades for your roof.', accent: 'bg-coral' },
   exchange: { kicker: 'The neighborhood market', blurb: 'Trade fictional harvest units for simulated simSOL. No real value, no real goods.', accent: 'bg-tangerine' },
-  lab: { kicker: 'Small lab, big notebooks', blurb: 'The lab grades harvest quality and keeps a city plant catalog.', accent: 'bg-aqua' },
+  lab: { kicker: 'Canopy Quarter crop lab', blurb: 'The lab grades harvest quality and keeps a city plant catalog.', accent: 'bg-aqua' },
   cafe: { kicker: 'Coffee by day, records by night', blurb: 'Jun spins the house radio here. Sit, listen, breathe.', accent: 'bg-tangerine' },
 };
 
@@ -334,19 +334,21 @@ function Lab() {
 
 function Cafe() {
   const music = useG(s => s.settings.music);
+  const muted = useG(s => s.settings.muted);
+  const onAir = music && !muted;
   return (
     <>
       <div className="rounded-2xl border-[2.5px] border-ink bg-ink text-cream p-4 flex items-center gap-4">
         <div className="flex items-end gap-1 h-10">
-          {[0, 1, 2, 3, 4].map(i => <span key={i} className="w-2 bg-butter rounded-sm origin-bottom" style={{ height: '100%', animation: music ? `bars ${0.6 + i * 0.13}s ease-in-out infinite` : undefined, transform: music ? undefined : 'scaleY(.2)' }} />)}
+          {[0, 1, 2, 3, 4].map(i => <span key={i} className="w-2 bg-butter rounded-sm origin-bottom" style={{ height: '100%', animation: onAir ? `bars ${0.6 + i * 0.13}s ease-in-out infinite` : undefined, transform: onAir ? undefined : 'scaleY(.2)' }} />)}
         </div>
         <div className="flex-1">
-          <p className="text-xs font-black uppercase tracking-widest text-butter">On the speakers</p>
-          <p className="font-display text-xl">Low Tide House Radio</p>
+          <p className="text-xs font-black uppercase tracking-widest text-butter">{onAir ? 'On the speakers · POTIFY' : 'Radio off · POTIFY'}</p>
+          <p className="font-display text-xl">{RECORD_TITLE}</p>
         </div>
       </div>
-      <button className="chunk w-full mt-3 bg-butter py-3" data-testid="button-cafe-music" onClick={() => { game.setSettings({ music: !music }); sfx.click(); }}>
-        {music ? 'Turn the house radio off' : 'Ask Jun to start the radio'}
+      <button className="chunk w-full mt-3 bg-butter py-3" data-testid="button-cafe-music" onClick={() => { game.setSettings(onAir ? { music: false } : { music: true, muted: false }); sfx.click(); }}>
+        {onAir ? 'Turn the house radio off' : 'Ask Jun to start the radio'}
       </button>
       <p className="text-sm font-bold text-muted-foreground mt-3">Jun is usually behind the counter from 8 AM to 3 PM, then at the fountain until evening.</p>
     </>
@@ -696,7 +698,7 @@ function SettingsPanel() {
   return (
     <Sheet title="Settings" kicker="Sound, camera, graphics, save" accent="bg-jade" test="modal-settings">
       <Toggle on={!st.muted} onClick={() => game.setSettings({ muted: !st.muted })} label="Sound effects and audio" test="toggle-sound" />
-      <Toggle on={st.music} onClick={() => game.setSettings({ music: !st.music })} label="Radio music" test="toggle-music" />
+      <Toggle on={st.music} onClick={() => game.setSettings({ music: !st.music })} label={'POTIFY radio · ' + RECORD_TITLE} test="toggle-music" />
       <p className="font-bold mt-3">Camera <span className="text-xs text-muted-foreground">(<Kbd>Q</Kbd> closer, <Kbd>R</Kbd> higher)</span></p>
       <div className="grid grid-cols-4 gap-2 mt-1.5">
         {CAMERA_PRESETS.map((c, i) => (
@@ -755,8 +757,11 @@ function Roadmap() {
 
 /* ---------------- Pause & sleep ---------------- */
 function Pause() {
+  const visible = useHudVisible();
   const items: [string, () => void, string][] = [
     ['Resume', () => closeModal(), 'Esc'],
+    [visible ? 'Hide overlays' : 'Show overlays', () => { game.setSettings({ showHud: !visible }); closeModal(); }, ''],
+    ['Field notes', () => openModal({ type: 'field-notes' }), ''],
     ['Bag', () => openModal({ type: 'inventory' }), 'I'],
     ['Map & goals', () => openModal({ type: 'map' }), 'M'],
     ['Daily calendar', () => openModal({ type: 'calendar' }), 'L'],

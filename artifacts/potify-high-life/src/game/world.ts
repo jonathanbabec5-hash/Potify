@@ -84,7 +84,7 @@ export const STATIC_TARGETS: Interactable[] = [
   { id: 'rack', kind: 'rack', x: 7, z: -7.1, r: 1.8, label: 'Drying rack', verb: 'Check', area: 'roof' },
   { id: 'planner', kind: 'planner', x: 4.1, z: -4.6, r: 1.4, label: 'Grow planner', verb: 'Read', area: 'roof' },
   { id: 'home', kind: 'door-up', x: 80, z: 14.2, r: 1.9, label: 'Canopy House · lobby', verb: 'Enter', area: 'town' },
-  { id: 'board', kind: 'board', x: 84, z: -2.9, r: 1.5, label: 'Town board', verb: 'Read', area: 'town' },
+  { id: 'board', kind: 'board', x: 84, z: -2.9, r: 1.5, label: 'Community board', verb: 'Read', area: 'town' },
   ...(Object.entries(SHOPS) as [keyof typeof SHOPS, (typeof SHOPS)[keyof typeof SHOPS]][]).map(([id, s]) => ({
     id: `shop-${id}`, kind: 'shop' as const, x: s.door[0], z: s.door[1], r: 2.0, label: s.name, verb: 'Enter', area: 'town' as Area, shop: id,
   })),

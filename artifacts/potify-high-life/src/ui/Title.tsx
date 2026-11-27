@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { ArrowRight, Check, Play, RotateCcw, Sprout } from 'lucide-react';
 import { game } from '@/game/store';
 import { act, player, ui, useG } from '@/game/runtime';
-import { sfx, unlockAudio } from '@/game/audio';
+import { configureAudio, sfx, unlockAudio } from '@/game/audio';
 import { SHIRTS, SKINS, Swatches, AvatarFigure } from '@/ui/common';
 
 export function Title() {
@@ -20,7 +20,7 @@ export function Title() {
   const enter = () => {
     const { x, z, zone, floor } = game.getState().position;
     player.x=x; player.z=z;
-    unlockAudio(); sfx.harvest();
+    unlockAudio(); configureAudio(game.getState().settings, true); sfx.harvest();
     ui.set({ inGame:true, modal:null, prompt:null, area:zone==='tower'||zone==='town'?zone:'roof', zone, floor:floor??7 });
   };
   const cont = () => { unlockAudio(); if (started && acknowledged) enter(); else { setStep('create'); sfx.open(); } };

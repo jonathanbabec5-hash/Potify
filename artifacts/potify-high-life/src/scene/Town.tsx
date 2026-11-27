@@ -176,8 +176,17 @@ export function Town() {
         <mesh position={[0.35, 0.8, 0]} material={mat('#13293a')}><boxGeometry args={[0.1, 1.6, 0.1]} /></mesh>
         <mesh position={[0, 1.5, 0.06]}>
           <planeGeometry args={[1.3, 0.9]} />
-          <meshStandardMaterial map={signTex('TOWN BOARD', '#c4a869', '#13293a', 256, 160)} />
+          <meshStandardMaterial color="#a78558" />
         </mesh>
+        <mesh position={[0, 1.79, 0.07]}>
+          <planeGeometry args={[1.24, 0.26]} />
+          <meshBasicMaterial map={signTex('QUARTER NOTICES', '#485a44', '#f6e8ce', 384, 80)} />
+        </mesh>
+        {[-0.39, 0, 0.38].map((x, i) => (
+          <mesh key={x} position={[x, 1.45 - i * 0.045, 0.08]} rotation-z={0.06 - i * 0.05}>
+            <planeGeometry args={[0.28, 0.34]} /><meshStandardMaterial color={i === 1 ? '#d4bd82' : '#f1e6ce'} />
+          </mesh>
+        ))}
       </group>
       {[[66, -1], [94, -1], [74, 10], [86, 10], [74, -6], [86, -6]].map(([x, z]) => <Lamp key={`${x}${z}`} x={x} z={z} />)}
     </group>

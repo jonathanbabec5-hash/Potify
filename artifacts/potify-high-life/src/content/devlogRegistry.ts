@@ -157,7 +157,7 @@ export const devlogSections: RegistrySection[] = [
     title: 'Festivals and social features',
     intro: 'Shared neighborhood traditions can make the calendar feel lived in.',
     entries: [
-      { id: 'SOC-001', title: 'A changing community noticeboard', detail: 'Small updates and optional errands can give familiar streets new texture.', status: concept },
+      { id: 'SOC-001', title: 'A changing community noticeboard', detail: 'Signed landing notices and the market board follow local harvests, deliveries and seasonal gatherings.', status: inDev },
       { id: 'SOC-002', title: 'Seasonal gathering days', detail: 'Future local events are planned as fictional social moments.', status: concept },
       { id: 'SOC-003', title: 'Friendship that takes time', detail: 'Current relationships grow through conversations; richer story arcs are planned.', status: inDev },
     ],
@@ -167,7 +167,7 @@ export const devlogSections: RegistrySection[] = [
     title: 'Audio and marketing',
     intro: 'The soundscape belongs to the neighborhood and its quieter hours.',
     entries: [
-      { id: 'AUDIO-001', title: 'A soft rooftop radio', detail: 'Original in-game music can be toggled from settings.', status: inDev },
+      { id: 'AUDIO-001', title: 'POTIFY radio', detail: 'The rooftop radio and Low Tide play The Soil Remembers (Grow Room Version) from the First Cycle edition.', status: inDev },
       { id: 'AUDIO-002', title: 'Small sounds for everyday actions', detail: 'Movement and interactions use light synthesized effects.', status: inDev },
       { id: 'AUDIO-003', title: 'Concept imagery stays labeled', detail: 'Any teaser stays marked as in development until its claims are verified.', status: inDev },
     ],

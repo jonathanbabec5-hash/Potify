@@ -1,7 +1,8 @@
 import type { GameState } from './store';
 import type { Interactable } from './runtime';
 import type { AABB } from './world';
-import { NEIGHBORS, PEOPLE, floorName, houseDate, meetingFloor, residentX } from './house';
+import { hasLandingBoard } from './notices';
+import { NEIGHBORS, PEOPLE, houseDate, meetingFloor, residentX } from './house';
 
 export const TOWER_BOUNDS = { minX: -8.45, maxX: 8.25, minZ: -5.62, maxZ: 5.35 };
 const CORE: AABB[] = [
@@ -57,8 +58,8 @@ export function towerTargets(
     list.push(site('house-record', 'house', -6.65, -3.6, 'Tape booth', 'Listen', { room: 'record' }));
   if (floor === date.festival.floor)
     list.push(site('house-fest', 'house', -2, 1.2, date.festival.title, 'Visit', { room: 'festival' }));
-  if (![4, 7, 12, 18, 21, 24].includes(floor))
-    list.push(site('house-doors', 'house', -4.5, -3.65, floorName(floor), 'Read notice', { room: 'doors' }));
+  if (hasLandingBoard(floor))
+    list.push(site('house-doors', 'house', -5.15, -3.65, 'Landing notices', 'Read', { room: 'doors' }));
   for (const id of NEIGHBORS) {
     if (personFloor(id, state) === floor)
       list.push(

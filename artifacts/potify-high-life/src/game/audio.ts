@@ -1,47 +1,76 @@
-// Original, fully synthesized sound. Nothing is loaded from disk.
+import recordingUrl from '../assets/the-soil-remembers-grow-room.mp3';
+
+export const RECORD_TITLE = 'The Soil Remembers (Grow Room Version)';
+// The released First Cycle master, shared by the rooftop radio, café and listening rooms.
+let radio: HTMLAudioElement | null = null;
+let playingGame = false;
+let playPending = false;
+
 let ctx: AudioContext | null = null;
 let master: GainNode | null = null;
-let musicBus: GainNode | null = null;
 let ambBus: GainNode | null = null;
 let muted = false;
 let musicOn = true;
-let musicTimer: number | null = null;
-let nextNote = 0;
-let step = 0;
-
 export function unlockAudio() {
   try {
     if (!ctx) {
       const AC = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
-      if (!AC) return;
+      if (!AC) { syncRadio(); return; }
       ctx = new AC();
       master = ctx.createGain();
       master.gain.value = muted ? 0 : 0.7;
       master.connect(ctx.destination);
-      musicBus = ctx.createGain();
-      musicBus.gain.value = musicOn ? 0.22 : 0;
-      musicBus.connect(master);
       ambBus = ctx.createGain();
       ambBus.gain.value = 0.05;
       ambBus.connect(master);
       startAmbience();
-      startMusic();
     }
-    if (ctx.state === 'suspended') void ctx.resume();
+    if (ctx.state === 'suspended') void ctx.resume().catch(() => {});
   } catch {
-    /* audio is optional */
+    /* The recording can also play without Web Audio effects. */
+  }
+  syncRadio();
+}
+
+function syncRadio() {
+  if (!playingGame || muted || !musicOn || document.hidden) {
+    radio?.pause();
+    return;
+  }
+  if (!radio) {
+    radio = new Audio(recordingUrl);
+    radio.loop = true;
+    radio.volume = 0.48;
+    // iOS manages element volume in hardware. Route through a gain node for the game mix.
+    if (ctx && master) {
+      const gain = ctx.createGain();
+      gain.gain.value = 0.48;
+      ctx.createMediaElementSource(radio).connect(gain);
+      gain.connect(master);
+      radio.volume = 1;
+    }
+    document.addEventListener('visibilitychange', syncRadio);
+  }
+  if (radio.paused && !playPending) {
+    playPending = true;
+    void radio.play().catch(() => { /* Retry on the next player gesture. */ }).finally(() => { playPending = false; });
   }
 }
 
-export function configureAudio(opts: { muted: boolean; music: boolean }) {
+export function configureAudio(opts: { muted: boolean; music: boolean }, inGame: boolean) {
   muted = opts.muted;
   musicOn = opts.music;
-  if (!ctx || !master || !musicBus) return;
-  master.gain.setTargetAtTime(muted ? 0 : 0.7, ctx.currentTime, 0.1);
-  musicBus.gain.setTargetAtTime(musicOn ? 0.22 : 0, ctx.currentTime, 0.3);
+  playingGame = inGame;
+  if (ctx && master) master.gain.setTargetAtTime(muted ? 0 : 0.7, ctx.currentTime, 0.1);
+  syncRadio();
 }
 
-function tone(freq: number, dur: number, type: OscillatorType = 'triangle', vol = 0.2, slide?: number, delay = 0, bus?: GainNode | null) {
+export function restartRecord() {
+  if (radio) radio.currentTime = 0;
+  syncRadio();
+}
+
+function tone(freq: number, dur: number, type: OscillatorType = 'triangle', vol = 0.2, slide?: number, delay = 0) {
   if (!ctx || !master || muted) return;
   const t = ctx.currentTime + delay;
   const o = ctx.createOscillator();
@@ -53,7 +82,7 @@ function tone(freq: number, dur: number, type: OscillatorType = 'triangle', vol 
   g.gain.exponentialRampToValueAtTime(vol, t + 0.012);
   g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
   o.connect(g);
-  g.connect(bus ?? master);
+  g.connect(master);
   o.start(t);
   o.stop(t + dur + 0.05);
 }
@@ -76,10 +105,6 @@ function noise(dur: number, vol: number, freq: number, delay = 0) {
 }
 
 export const sfx = {
-  record: (take: number) => {
-    const notes = take === 0 ? [220, 330, 392, 330, 440, 392, 262, 330] : [294, 370, 440, 494, 440, 370, 330, 294];
-    notes.forEach((note, i) => { tone(note, 0.4, 'triangle', 0.14, undefined, i * 0.3); if (i % 2 === 0) tone(note / 2, 0.5, 'sine', 0.16, undefined, i * 0.3); });
-  },
   step: () => noise(0.06, 0.18, 900 + Math.random() * 500),
   open: () => { tone(520, 0.09, 'square', 0.05); tone(780, 0.12, 'triangle', 0.08, undefined, 0.05); },
   close: () => tone(600, 0.1, 'triangle', 0.07, 380),
@@ -108,25 +133,4 @@ function startAmbience() {
   src.buffer = buf; src.loop = true;
   const f = ctx.createBiquadFilter(); f.type = 'lowpass'; f.frequency.value = 500;
   src.connect(f); f.connect(ambBus); src.start();
-}
-
-// Original lazy rooftop loop: four-chord pentatonic plucks.
-const CHORDS = [[220, 277, 330, 415], [196, 247, 294, 370], [174, 220, 262, 330], [196, 247, 294, 392]];
-const MEL = [0, 2, 1, 3, 2, -1, 1, 0, 3, -1, 2, 1, 0, -1, 2, -1];
-function startMusic() {
-  if (!ctx || musicTimer !== null) return;
-  nextNote = ctx.currentTime + 0.2;
-  musicTimer = window.setInterval(() => {
-    if (!ctx || !musicBus) return;
-    while (nextNote < ctx.currentTime + 0.4) {
-      const chord = CHORDS[Math.floor(step / 16) % 4];
-      const m = MEL[step % 16];
-      const delay = Math.max(0, nextNote - ctx.currentTime);
-      if (step % 8 === 0) tone(chord[0] / 2, 1.6, 'sine', 0.35, undefined, delay, musicBus);
-      if (m >= 0) tone(chord[m] * 2, 0.5, 'triangle', 0.16, undefined, delay, musicBus);
-      if (step % 4 === 2) tone(chord[(step / 2) % 4 | 0], 0.3, 'sine', 0.08, undefined, delay, musicBus);
-      nextNote += 0.3;
-      step++;
-    }
-  }, 120);
 }

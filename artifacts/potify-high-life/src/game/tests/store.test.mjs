@@ -350,3 +350,37 @@ test('pre-tower saves retain their address and a stair save restores the exact f
   assert.equal(restored.getState().position.z,-1.3);
   assert.equal(validateSave({...restored.getState(),position:{zone:'tower',floor:0,x:7,z:2}}),false);
 });
+
+test('each posted landing has its own signed note, and the Quarter follows actual crop and house progress', async () => {
+  const { landingNotice, hasLandingBoard, townNotices } = await import('../notices.ts');
+  const { freshLife } = await import('../house.ts');
+  const base = { ...game.getState(), day: 1, life: freshLife(), projects: [], crate: null,
+    deliveries: 0, warehouse: { leased: false, lastDispatchDay: 0 }, quest: { sold: false } };
+  const floors = Array.from({ length: 24 }, (_, i) => i + 1).filter(hasLandingBoard);
+  assert.deepEqual(floors, [1, 2, 3, 5, 6, 8, 9, 10, 11, 13, 14, 15, 16, 17, 19, 20, 22, 23]);
+  assert.equal(new Set(floors.map(f => landingNotice(f, base).title)).size, floors.length);
+  assert.ok(floors.every(f => landingNotice(f, base).signed));
+  assert.match(townNotices(base)[0].title, /Buying/);
+  assert.match(townNotices({ ...base, quest: { sold: true } })[0].body, /4 simSOL/);
+  const second = { ...base, quest: { sold: true }, projects: ['cart'], deliveries: 1 };
+  assert.match(townNotices(second)[0].body, /80 simSOL/);
+  assert.match(townNotices(second)[1].body, /Petri & Pistil/);
+  assert.match(townNotices({ ...second, crate: { units: 60 } })[1].title, /ready/);
+  assert.match(townNotices({ ...second, warehouse: { leased: true, lastDispatchDay: 1 } })[1].body, /tomorrow/);
+  assert.match(landingNotice(23, { ...base, day: 7 }).body, /Summer 4–6, floor 12/);
+  assert.match(landingNotice(23, { ...base, day: 40 }).body, /Spring 4–6, floor 24/);
+  assert.match(landingNotice(23, { ...base, life: { ...base.life, festivals: { '0': 1 } } }).body, /keepsake/);
+});
+
+test('earlier saves accept the overlay preference and retain it after reloading', async () => {
+  const saved = JSON.parse(localStorage.getItem(SAVE_KEY));
+  delete saved.settings.showHud;
+  assert.ok(validateSave(saved));
+  localStorage.setItem(SAVE_KEY, JSON.stringify(saved));
+  const { game: loaded } = await import('../store.ts?hud-default');
+  loaded.setSettings({ showHud: false });
+  const { game: restored } = await import('../store.ts?hud-reload');
+  assert.equal(restored.getState().settings.showHud, false);
+  assert.deepEqual(restored.getState().position, saved.position);
+  assert.equal(validateSave({ ...saved, settings: { ...saved.settings, showHud: 'off' } }), false);
+});

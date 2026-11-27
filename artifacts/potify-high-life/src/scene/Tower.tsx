@@ -5,6 +5,7 @@ import housePrint from '../../../../docs/marketing/assets/2026-11-08-potify-city
 import { useG, useUI } from '@/game/runtime';
 import { PEOPLE, NEIGHBORS, STOREY, STAIR_START, TURN, floorName, houseDate, childStage } from '@/game/house';
 import { residentX } from '@/game/house';
+import { hasLandingBoard } from '@/game/notices';
 import { personFloor } from '@/game/towerWorld';
 import { mat, signTex, windowMat } from './materials';
 import { Character } from './Character';
@@ -343,6 +344,16 @@ export function Tower() {
         <Box at={[-3.04, -0.13, -0.15]} size={[11.38, 0.26, 11.58]} color="#988978" />
         <Box at={[5.55, -0.14, 3.42]} size={[5.9, 0.28, 4.84]} color="#8e8374" />
         <Floorboards />
+        {hasLandingBoard(floor) && (
+          <group position={[-5.15, floor === 1 ? 1.8 : 1.7, floor === 1 ? -4.53 : -5.32]}>
+            <Box at={[0, 0, 0]} size={[1.12, 0.86, 0.09]} color="#9b794e" />
+            <Sign text="HOUSE NOTES" x={0} y={0.27} z={0.055} w={1.07} h={0.22} />
+            {[-0.23, 0.2].map((x, i) => <group key={x} rotation-z={i ? -0.05 : 0.04}>
+              <Box at={[x, -0.07, 0.06]} size={[0.33, 0.39, 0.015]} color={i ? '#e5ca93' : '#f6e8ca'} />
+              <Box at={[x, 0.09, 0.08]} size={[0.045, 0.045, 0.02]} color="#596d4a" />
+            </group>)}
+          </group>
+        )}
         <Box at={[-3.02, 0.71, -5.67]} size={[11.45, 1.42, 0.23]} color="#a99b82" />
         <Box at={[-3.02, 3.03, -5.67]} size={[11.45, 0.23, 0.23]} color="#998b74" />
         {[-8.64, -4.95, -1.15, 2.56].map((x) => (

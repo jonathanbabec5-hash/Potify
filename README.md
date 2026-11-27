@@ -4,6 +4,10 @@
 
 This redesign brings the Roof 7B story together with the [first-harvest campaign](docs/marketing/2026-11-08-original-campaign.md). Start in the apartment, read the lease, meet the neighbors and carry your first crop downstairs to Green Exchange. Everything runs on fictional simSOL and browser saves.
 
+On a phone, the clock, objectives and notifications start hidden. Open the pause menu in the upper right and tap **Show overlays** or **Hide overlays**. The game remembers the setting on this browser.
+
+The market-square board carries signed crop orders and festival invitations. Upstairs, the notes belong to individual landings. Low Tide and the rooftop radio play the official POTIFY release *The Soil Remembers (Grow Room Version)*. [First Cycle source recording](https://github.com/jonathanbabec5-hash/potify-first-cycle-public-edition/blob/76c38a7629db38130de6a263a75cba02d578a022/public/assets/the-soil-remembers-grow-room.mp3).
+
 ## From Roof 7B to the canal
 
 | Place | What you can do |

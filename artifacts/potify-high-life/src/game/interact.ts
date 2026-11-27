@@ -1,6 +1,6 @@
 import { game } from '@/game/store';
 import { act, fx, openModal, player, toast, ui, type Area, type Interactable } from '@/game/runtime';
-import { sfx } from '@/game/audio';
+import { RECORD_TITLE, sfx } from '@/game/audio';
 import { zoneAt } from '@/game/world';
 
 export function teleport(area: Area, x: number, z: number, yaw: number, floor = 1) {
@@ -40,17 +40,18 @@ export function interact(t: Interactable | null) {
     case 'sleep': openModal({ type: 'sleep' }); break;
     case 'wardrobe': openModal({ type: 'avatar' }); break;
     case 'radio': {
-      const m = !game.getState().settings.music;
-      game.setSettings({ music: m });
+      const { music, muted } = game.getState().settings;
+      const m = !music || muted;
+      game.setSettings(m ? { music: true, muted: false } : { music: false });
       sfx.click();
-      toast(m ? 'Radio on: Low Tide late-night set.' : 'Radio off. Just the city hum now.');
+      toast(m ? 'POTIFY radio · ' + RECORD_TITLE : 'Radio off. Just the city hum now.');
       break;
     }
     case 'warehouse-lease': case 'freight': openModal({ type: t.kind }); break;
     case 'cart': openModal({ type: 'cart' }); break;
     case 'rack': openModal({ type: 'inventory' }); break;
     case 'planner': openModal({ type: 'calendar' }); break;
-    case 'board': openModal({ type: 'map' }); break;
+    case 'board': openModal({ type: 'house', room: 'town-board' }); break;
     case 'story-item': {
       if (!t.storyItem) break;
       game.readStoryItem(t.storyItem);

@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react';
 import { X } from 'lucide-react';
-import { closeModal } from '@/game/runtime';
+import { closeModal, useHudVisible, useUI } from '@/game/runtime';
 import { sfx } from '@/game/audio';
 import type { Resident } from '@/game/story';
 import { NPCS, PLAYER_HAIR } from '@/game/world';
@@ -66,6 +66,8 @@ export function AvatarFigure({ shirt, skin, size = 64, variant = 'player' }: { s
 }
 
 export function Sheet({ title, kicker, children, wide, accent = 'bg-tangerine', test }: { title: string; kicker?: string; children: ReactNode; wide?: boolean; accent?: string; test?: string }) {
+  const showHud = useHudVisible();
+  const feedback = useUI(s => s.toasts.at(-1));
   return (
     <div className="fixed inset-0 z-40 flex items-center justify-center p-3" data-testid={test ?? 'modal'}>
       <div className="absolute inset-0 bg-ink/45 backdrop-blur-[2px]" onClick={() => closeModal()} />
@@ -80,6 +82,9 @@ export function Sheet({ title, kicker, children, wide, accent = 'bg-tangerine', 
           </button>
         </div>
         <div className="overflow-auto p-4 md:p-5">{children}</div>
+        {!showHud && feedback && (
+          <p role="status" className="shrink-0 border-t border-ink/20 px-4 py-2 text-sm font-bold">{feedback.text}</p>
+        )}
       </div>
     </div>
   );

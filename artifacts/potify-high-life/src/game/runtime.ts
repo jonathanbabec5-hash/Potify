@@ -14,7 +14,7 @@ export type NpcId = Resident;
 export type Modal =
   | null
   | { type: 'pause' | 'inventory' | 'avatar' | 'map' | 'calendar' | 'settings' | 'roadmap' | 'sleep' | 'field-notes' | 'cart' | 'warehouse-lease' | 'freight' }
-  | { type: 'house'; room: 'lift' | 'album' | 'festival' | 'archive' | 'record' | 'doors' | 'commons' }
+  | { type: 'house'; room: 'lift' | 'album' | 'festival' | 'archive' | 'record' | 'doors' | 'commons' | 'town-board' }
   | { type: 'neighbor'; who: Neighbor; line: string }
   | { type: 'bed'; index: number }
   | { type: 'shop'; shop: ShopId }
@@ -80,6 +80,10 @@ export function useG<T>(sel: (s: GS) => T): T {
     return v;
   };
   return useSyncExternalStore(game.subscribe, get, get);
+}
+
+export function useHudVisible() {
+  return useG(s => s.settings.showHud ?? !window.matchMedia('(pointer: coarse)').matches);
 }
 
 export function openModal(m: Modal) { ui.set({ modal: m }); if (m) sfx.open(); }

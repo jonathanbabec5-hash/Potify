@@ -35,6 +35,7 @@ export function projectPrice(installed: number) {
 const emptyPlot = (id: number): Plot => ({ id, strain: null, growth: 0, water: 0, health: 50, fed: false });
 
 export interface Settings {
+  showHud?: boolean;
   muted: boolean;
   music: boolean;
   camera: number;
@@ -165,6 +166,7 @@ export function validateSave(value: unknown): value is SavedGame {
   if (!object(s.position) || !finite(s.position.x, -1000, 1000) || !finite(s.position.z, -1000, 1000) ||
       !(s.position.zone === 'tower' ? validFloor(s.position.floor) : ['rooftop', 'town', 'greenhouse', 'apartment'].includes(s.position.zone as string))) return false;
   if (!object(s.settings) || typeof s.settings.muted !== 'boolean' || typeof s.settings.music !== 'boolean' ||
+      (s.settings.showHud !== undefined && typeof s.settings.showHud !== 'boolean') ||
       !finite(s.settings.camera, 0, 30) || !['low', 'high'].includes(s.settings.quality as string)) return false;
   if (!object(s.friendship) || !Object.values(s.friendship).every(v => finite(v, 0, 100)) ||
       !object(s.lastTalkDay) || !Object.values(s.lastTalkDay).every(v => finite(v, 1))) return false;
@@ -268,18 +270,18 @@ function advancePlants(seconds: number) {
 const NPC_DIALOGUE: Record<string, string[]> = {
   mira: [
     'Welcome to the Canopy Quarter! This roof is your fresh start. Take your seeds to a bed, give them a little water, and let the city slow down.',
-    'In The POTIFY Chronicles, every big story starts with one small seed. Yours starts right here.',
-    'Seed, soil, and a little neighborly kindness. That is our kind of ecosystem.',
+    'I used to carry the seed crates up from the canal two at a time. Now I write the roof number on every packet. Saves me a second trip.',
+    'I can pick out 7B from the square at dusk. Yours is the last greenhouse that catches the light.',
   ],
   moss: [
-    'Rootworks is all about a healthy foundation. In our little simulation, nourishing a bed raises plant health and harvest quality.',
+    'See the dark flecks on my cuffs? Mixed a fresh batch this morning. If your roof beds could use feeding, there are soil bags at Rootworks.',
     'My Cloudburst can tends every bed at once. Less rushing, more rooftop sunsets.',
     'The living-soil system speeds things up. A good tool should give you more time to enjoy the neighborhood.',
   ],
   jun: [
-    'I am Jun. Coffee by morning, rooftop radio by night. Bring your first harvest to Green Exchange; it is all virtual here.',
-    'Have you visited the lab? We are collecting stories about the plants that make our fictional city unique.',
-    'A whole city, growing at its own pace. Stay awhile. You belong here.',
+    'Jun. I run Low Tide. First time down from the roof? Green Exchange buys the harvest. Come by the café after you’ve weighed in.',
+    'When the last café shift runs long, I put on the Grow Room recording. Usually somebody stays to hear the end.',
+    'My favorite part of closing is turning the chairs over and finding out which record the night crew left me.',
   ],
 };
 
