@@ -1,4 +1,5 @@
 import { readHeadLook } from '@/game/appearance';
+import { getPlotStatus, PLOT_STATUS_LABEL } from '@/game/plotStatus';
 import { PacketInspection } from '@/ui/PacketInspection';
 import { HairOptions } from '@/ui/HairOptions';
 import { ResidentView } from '@/scene/ResidentView';
@@ -52,7 +53,8 @@ function BedPanel({ index }: { index: number }) {
   const b = BEDS[index];
   if (!plot) return null;
   const seed = SEEDS.find(s => s.id === plot.strain);
-  const ready = !!plot.strain && plot.growth >= 100;
+  const status = getPlotStatus(plot);
+  const ready = status === 'ready';
   const run = (fn: () => unknown, ok: () => void) => { if (act(fn)) ok(); };
   return (
     <Sheet title={`Bed ${index + 1}`} kicker={plot.strain ? `${seedName(plot.strain)} · ${stageName(plot.growth)}` : 'Empty grow bed'} accent={ready ? 'bg-butter' : 'bg-jade'} test="modal-bed">
@@ -82,13 +84,15 @@ function BedPanel({ index }: { index: number }) {
               <Meter label="Growth" value={plot.growth} color="#8fbf4a" testid="meter-growth" />
             </div>
           </div>
+          <p className="mt-3 text-sm font-bold" data-testid="plot-status">{PLOT_STATUS_LABEL[status]}</p>
           <div className="grid grid-cols-2 gap-3 mt-3">
             <Meter label="Water" value={plot.water} color="#4fb3e8" testid="meter-water" />
             <Meter label="Health" value={plot.health} color="#ef6f7c" testid="meter-health" />
           </div>
           <p className="text-xs font-bold text-muted-foreground mt-3">
             {plot.fed ? 'Nourished with Rootworks soil: health climbs faster.' : 'Not nourished yet. Adding soil boosts health and harvest quality.'}
-            {plot.water < 30 && ' Dry soil barely grows and hurts health.'}
+            {!ready && plot.water <= 0 && ' The bed is dry: growth slows and health falls until watered.'}
+            {!ready && plot.water > 0 && plot.water < 30 && ' Water is running low.'}
           </p>
           <div className="grid grid-cols-3 gap-2 mt-4">
             <button className="chunk bg-aqua py-3 flex flex-col items-center gap-1" disabled={ready} data-testid="button-water"
