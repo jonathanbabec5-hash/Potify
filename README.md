@@ -13,6 +13,8 @@
 
 Grow a crop on the rooftop, get to know the neighborhood and return to a saved game in the same browser. The main branch contains the baseline life sim. The later Roof 7B lease story and developer notes are available on the [public story review branch](https://github.com/jonathanbabec5-hash/Potify/tree/codex/public-developer-guide). The game uses fictional money.
 
+The [Canopy House development branch](https://github.com/jonathanbabec5-hash/Potify/tree/redesign/first-harvest-neighborhood/artifacts/potify-high-life) includes the first rooftop project choice, crop-status tags, and neighborhood stories at the fourth-floor kitchen and Seed & Signal. Follow [development and playtest notes in PR #5](https://github.com/jonathanbabec5-hash/Potify/pull/5).
+
 ## Original development and marketing archive
 
 [Open the original marketing and design archive](docs/marketing/ORIGINALS.md) for the November 4 X and vertical story images, the November 8 campaign copy and artwork, and the original public game bible. The [public Master Key PDF](docs/canon/originals/POTIFY_Master_Key_PUBLIC.pdf) preserves the November 4 layout. A [text extraction](docs/canon/2026-11-04-public-master-key-extracted.txt) is also available.
