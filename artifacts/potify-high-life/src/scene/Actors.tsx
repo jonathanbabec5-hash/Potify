@@ -1,11 +1,16 @@
-import { useEffect, useRef } from 'react';
+import { movementBasis, sampleWalking } from '@/game/walkCamera';
+import { crossing, stairHeight, STOREY, TOP_FLOOR } from '@/game/house';
+import { TOWER_BOUNDS, towerColliders, towerTargets } from '@/game/towerWorld';
+import { teleport } from '@/game/interact';
+import { Suspense, useEffect, useMemo, useRef } from 'react';
 import { useFrame } from '@react-three/fiber';
 import { useKeyboardControls } from '@react-three/drei';
 import * as THREE from 'three';
 import { game } from '@/game/store';
-import { joy, npcPos, player, ui, useG, useUI, type Interactable, type NpcId } from '@/game/runtime';
-import { NPCS, ROOF_BOUNDS, ROOF_COLLIDERS, STATIC_TARGETS, TOWN_BOUNDS, TOWN_COLLIDERS, npcSchedule, zoneAt, type AABB } from '@/game/world';
+import { camCtl, joy, npcPos, player, ui, useG, useHudVisible, useUI, type Interactable, type NpcId } from '@/game/runtime';
+import { CLOSED_WARD_COLLIDERS, NPCS, ROOF_BOUNDS, roofColliders, STATIC_TARGETS, TOWN_BOUNDS, TOWN_COLLIDERS, npcSchedule, zoneAt, type AABB } from '@/game/world';
 import { sfx } from '@/game/audio';
+import { Resident } from './Resident';
 import { Character } from '@/scene/Character';
 
 export type Ctl = 'forward' | 'back' | 'left' | 'right' | 'run';
@@ -30,68 +35,107 @@ export function Player() {
   const group = useRef<THREE.Group>(null);
   const speed = useRef(0);
   const [, getKeys] = useKeyboardControls<Ctl>();
+  const introducing = useUI(s => !!s.opening);
+  const firstPerson = useG(s => s.settings.camera === 1);
+  const handheld = window.matchMedia('(pointer: coarse)').matches;
   const shirt = useG(s => s.shirt);
+  const hairStyle = useG(s => s.hairStyle), wearsCap = useG(s => s.wearsCap);
   const skin = useG(s => s.skin);
+  const leased = useG(s => s.warehouse.leased);
+  const town = leased ? TOWN_COLLIDERS : CLOSED_WARD_COLLIDERS;
+  const hasGlass = useG(s => s.projects.includes('glasshouse'));
+  const hasCart = useG(s => s.projects.includes('cart'));
+  const roof = useMemo(() => roofColliders(hasGlass, hasCart), [hasGlass, hasCart]);
+  const floor = useUI(s => s.floor);
+  const archive = useG(s => s.life.archiveOpen);
+  const indoor = useMemo(() => towerColliders(floor,archive), [floor,archive]);
   const lastSave = useRef(0);
   const stepAcc = useRef(0);
 
   useEffect(() => {
     const p = game.getState().position;
-    const area = p.zone === 'town' ? 'town' : 'roof';
-    const cols = area === 'town' ? TOWN_COLLIDERS : ROOF_COLLIDERS;
+    const area = p.zone === 'tower' || p.zone === 'town' ? p.zone : 'roof';
+    const cols = area === 'tower' ? towerColliders(p.floor ?? 7, archive) : area === 'town' ? town : roof;
     const ok = Number.isFinite(p.x) && Number.isFinite(p.z) && !blocked(p.x, p.z, cols);
     player.x = ok ? p.x : area === 'town' ? 80 : 0;
     player.z = ok ? p.z : area === 'town' ? 12 : 4;
-    ui.set({ area, zone: zoneAt(area, player.x, player.z) });
+    ui.set({ area, floor: p.floor ?? 7, zone: zoneAt(area, player.x, player.z) });
   }, []);
 
   useFrame((st, raw) => {
     const dt = Math.min(raw, 0.05);
     const u = ui.get();
     let mx = 0, mz = 0, run = false;
-    if (u.inGame && !u.modal && !u.fading) {
+    if (u.inGame && !u.opening && !u.modal && !u.fading) {
       const k = getKeys();
       mx = (k.right ? 1 : 0) - (k.left ? 1 : 0) + joy.x;
       mz = (k.back ? 1 : 0) - (k.forward ? 1 : 0) + joy.y;
+      const basis=movementBasis(camCtl.walk,mx,mz,camCtl.yawOffset,firstPerson||camCtl.dragging||performance.now()<camCtl.manualUntil);
+      const cos = Math.cos(basis), sin = Math.sin(basis);
+      const side = mx;
+      mx = side * cos - mz * sin;
+      mz = side * sin + mz * cos;
       run = k.run;
-    }
+    } else movementBasis(camCtl.walk,0,0,camCtl.yawOffset,false);
     const len = Math.hypot(mx, mz);
     if (len > 1) { mx /= len; mz /= len; }
     const sp = (run ? 7 : 4.4) * Math.min(1, len);
-    const cols = u.area === 'town' ? TOWN_COLLIDERS : ROOF_COLLIDERS;
-    const b = u.area === 'town' ? TOWN_BOUNDS : ROOF_BOUNDS;
+    const priorX=player.x, priorZ=player.z;
+    let level = u.floor;
+    const cols = u.area === 'tower' ? indoor : u.area === 'town' ? town : roof;
+    const b = u.area === 'tower' ? TOWER_BOUNDS : u.area === 'town' ? TOWN_BOUNDS : ROOF_BOUNDS;
     if (len > 0.08) {
       const nx = THREE.MathUtils.clamp(player.x + mx * sp * dt, b.minX, b.maxX);
       if (!blocked(nx, player.z, cols)) player.x = nx;
       const nz = THREE.MathUtils.clamp(player.z + mz * sp * dt, b.minZ, b.maxZ);
-      if (!blocked(player.x, nz, cols)) player.z = nz;
-      const target = Math.atan2(mx, mz);
-      let d = target - player.yaw;
-      d = Math.atan2(Math.sin(d), Math.cos(d));
+      if (!blocked(player.x, nz, cols)) {
+        const change = u.area === 'tower' ? crossing(player.x, player.z, nz) : 0;
+        if (level + change > TOP_FLOOR) {
+          teleport('roof', 7.2, 9.9, -Math.PI/2);
+        } else if (level + change >= 1) {
+          player.z = nz;
+          if (change) {
+            level += change;
+            ui.set({ floor: level, prompt: null });
+            game.setPosition({ x: player.x, z: player.z, zone: 'tower', floor: level });
+          }
+        }
+      }
+    }
+    const ax=player.x-priorX, az=player.z-priorZ;
+    sampleWalking(camCtl.walk,ax,az,dt);
+    const accepted=Math.hypot(ax,az);
+    if (dt>0 && accepted>.02*dt) {
+      const target = Math.atan2(ax, az);
+      const d = Math.atan2(Math.sin(target-player.yaw), Math.cos(target-player.yaw));
       player.yaw += d * Math.min(1, dt * 12);
-      stepAcc.current += sp * dt;
+      stepAcc.current += accepted;
       if (stepAcc.current > (run ? 1.1 : 0.85)) { stepAcc.current = 0; sfx.step(); }
     }
-    player.speed = len > 0.08 ? sp : 0;
+    player.speed = dt>0 ? accepted / dt : 0;
     speed.current = THREE.MathUtils.lerp(speed.current, player.speed, Math.min(1, dt * 10));
+    player.y = u.area === 'tower' ? (level - 1) * STOREY + stairHeight(player.x,player.z) : 0;
     if (group.current) {
-      group.current.position.set(player.x, 0, player.z);
+      group.current.position.set(player.x, player.y, player.z);
       group.current.rotation.y = player.yaw;
     }
 
+    if (!u.inGame || u.opening) return;
     const zone = zoneAt(u.area, player.x, player.z);
-    if (zone !== u.zone) { ui.set({ zone }); game.setPosition({ x: player.x, z: player.z, zone }); }
+    if (zone !== u.zone) { ui.set({ zone }); game.setPosition({ x: player.x, z: player.z, zone, ...(u.area === 'tower' ? {floor:level} : {}) }); }
     const now = st.clock.elapsedTime;
     if (u.inGame && now - lastSave.current > 0.25) {
       lastSave.current = now;
-      game.setPosition({ x: player.x, z: player.z, zone });
+      game.setPosition({ x: player.x, z: player.z, zone, ...(u.area === 'tower' ? {floor:level} : {}) });
     }
 
     // nearest interaction target
     let best: Interactable | null = null;
     let bd = Infinity;
-    for (const t of STATIC_TARGETS) {
-      if (t.area !== u.area) continue;
+    const targets = u.area === 'tower' ? towerTargets(level,game.getState()) : STATIC_TARGETS;
+    for (const t of targets) {
+      if ((u.area === 'tower' && player.x > 2.75 && player.z < 1) || t.area !== u.area || (t.kind === 'freight' && !leased) || (t.kind === 'cart' && !hasCart) ||
+          (t.kind === 'bed' && (t.index ?? 0) >= 6 && !hasGlass)) continue;
       const d = Math.hypot(t.x - player.x, t.z - player.z);
       if (d < t.r && d < bd) { bd = d; best = t; }
     }
@@ -105,7 +149,6 @@ export function Player() {
       }
     }
     if (best && best.kind === 'bed') best = { ...best, verb: bedPrompt(best.index ?? 0) };
-    if (!u.inGame) best = null;
     const prev = u.prompt;
     if ((prev?.id ?? null) !== (best?.id ?? null) || prev?.verb !== best?.verb || (best?.kind === 'npc' && prev && Math.hypot(prev.x - best.x, prev.z - best.z) > 0.3)) {
       ui.set({ prompt: best });
@@ -113,8 +156,8 @@ export function Player() {
   });
 
   return (
-    <group ref={group}>
-      <Character shirt={shirt} skin={skin} hair="#13293a" variant="player" speed={speed} />
+    <group ref={group} visible={!firstPerson && !introducing}>
+      {!firstPerson && !introducing && <Suspense fallback={null}><Resident look={{ hairStyle, wearsCap }} shirt={shirt} skin={skin} speed={speed} handheld={handheld} /></Suspense>}
     </group>
   );
 }
@@ -165,7 +208,9 @@ export function NPCs() {
 }
 
 export function PromptMarker() {
+  const visible = useHudVisible();
   const prompt = useUI(s => s.prompt);
+  const floor = useUI(s => s.floor);
   const r = useRef<THREE.Group>(null);
   useFrame(st => {
     if (!r.current) return;
@@ -174,10 +219,10 @@ export function PromptMarker() {
     r.current.rotation.y = st.clock.elapsedTime * 1.5;
     r.current.scale.setScalar(1 + Math.sin(st.clock.elapsedTime * 5) * 0.06);
   });
-  if (!prompt) return null;
+  if (!visible || !prompt) return null;
   const h = prompt.kind === 'npc' ? 2.7 : prompt.kind === 'bed' ? 0.7 : 0.05;
   return (
-    <group ref={r} position={[prompt.x, 0, prompt.z]}>
+    <group ref={r} position={[prompt.x, prompt.area === 'tower' ? (floor-1)*STOREY : 0, prompt.z]}>
       <mesh position={[0, h + 0.03, 0]} rotation-x={-Math.PI / 2}>
         <ringGeometry args={[prompt.kind === 'bed' ? 1.55 : 0.7, prompt.kind === 'bed' ? 1.72 : 0.84, 6]} />
         <meshBasicMaterial color="#fbd255" transparent opacity={0.9} depthWrite={false} />

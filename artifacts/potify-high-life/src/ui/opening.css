@@ -1,0 +1,34 @@
+.welcome-scene{position:fixed;inset:0;z-index:35;overflow:hidden;background:#101a14;color:#fff2d6;touch-action:manipulation}
+.opening-film{position:absolute;inset:0;overflow:hidden;background:#101a14}
+.opening-film>img,.opening-film>video{position:absolute;inset:0;width:100%;height:100%;object-fit:contain}
+.opening-film>img[hidden]{display:none}
+.opening-film>video{opacity:0}.opening-film>video.film-playing{opacity:1}
+.welcome-fade{position:absolute;inset:0;background:#090c09;opacity:0;animation:welcome-dawn linear both;pointer-events:none}
+@keyframes welcome-dawn{from{opacity:1}to{opacity:0}}
+.welcome-top{position:absolute;z-index:1;top:max(.8rem,env(safe-area-inset-top));right:max(1rem,env(safe-area-inset-right));display:flex;gap:.5rem}
+.welcome-top-button{min-height:44px;min-width:44px;border:1px solid #f6e7c665;border-radius:999px;background:#18201ce6;padding:.4rem .85rem;font-size:.83rem;font-weight:700;display:grid;place-items:center}
+.welcome-dialogue{position:absolute;bottom:max(.9rem,calc(env(safe-area-inset-bottom) + .5rem));left:50%;width:min(32rem,calc(100% - 1.5rem));transform:translateX(-50%);background:#1d2e27fa;border:1px solid #dfcb936e;border-radius:1.1rem;padding:.85rem 1.05rem .7rem;box-shadow:0 14px 34px #14130a86}
+.welcome-meta{display:flex;justify-content:space-between;gap:.5rem;color:#dbc390;font-size:.68rem;font-weight:800;letter-spacing:.09em}
+.welcome-dialogue h1{font-family:Georgia,serif;font-size:1.42rem;font-weight:700;margin:.2rem 0 .35rem;line-height:1.25}
+.welcome-dialogue h1 span{font:600 .75rem system-ui;color:#d9d1ba;margin-left:.35rem}
+.welcome-dialogue p{font-size:clamp(.97rem,2.6vw,1.13rem);line-height:1.36;margin:0;min-height:3em}
+.welcome-dialogue button{margin:.55rem 0 0 auto;display:flex;align-items:center;gap:.5rem;min-height:44px;border-radius:999px;padding:.4rem .85rem;background:#f4dfac;color:#23362a;font-weight:800}
+.welcome-hold{position:absolute;bottom:max(1.3rem,calc(env(safe-area-inset-bottom) + .7rem));left:50%;transform:translateX(-50%);animation:welcome-cue .6s both}
+.welcome-hold button{display:flex;align-items:center;gap:.65rem;white-space:nowrap;min-height:46px;padding:.5rem 1rem;border-radius:999px;font-size:.89rem;font-weight:740;background:#29271ee0;color:#fff6d9;border:1px solid #f6dea57d;box-shadow:0 4px 20px #20140f69}
+.welcome-dialogue button:focus-visible,.welcome-top-button:focus-visible,.welcome-hold button:focus-visible{outline:2px solid #fff3cc;outline-offset:3px}
+@keyframes welcome-cue{from{opacity:0;translate:0 .35rem}to{opacity:1;translate:0 0}}
+.opening-objective{position:absolute;left:max(.75rem,env(safe-area-inset-left));top:max(.75rem,env(safe-area-inset-top));display:grid;gap:.12rem;padding:.57rem .78rem;width:min(265px,calc(100% - 5.8rem));border-radius:.65rem;background:#15241edb;border:1px solid #c8ab706a;color:#fff1ce;box-shadow:0 .25rem .8rem #0b100b42;pointer-events:none}
+.opening-objective span{font:800 .63rem/1.2 system-ui;letter-spacing:.16em;color:#e4ca91}
+.opening-objective strong{font:700 1.02rem/1.15 Georgia,serif}
+.opening-objective small{font:500 .72rem/1.3 system-ui;color:#f2e6ce}
+@media(orientation:portrait){
+  .opening-film{inset:auto 0 47%;aspect-ratio:16/9}
+  .welcome-dialogue,.welcome-hold{top:55%;bottom:auto}
+}
+@media(orientation:landscape){
+  .welcome-dialogue{left:max(1rem,env(safe-area-inset-left));width:min(31rem,53vw);transform:none}
+}
+@media(max-height:460px) and (orientation:landscape){
+  .welcome-dialogue{padding:.5rem .75rem}.welcome-dialogue p{min-height:0}.welcome-dialogue h1{font-size:1.1rem}
+}
+@media(prefers-reduced-motion:reduce){.welcome-hold{animation:none}}

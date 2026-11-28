@@ -1,21 +1,28 @@
 import { useRef, useSyncExternalStore } from 'react';
 import { game } from '@/game/store';
 import { sfx } from '@/game/audio';
+import { newWalkHeading } from './walkCamera';
+import type { Resident, StoryItem, StoryPage } from '@/game/story';
 
 export type GS = ReturnType<typeof game.getState>;
-export type Area = 'roof' | 'town';
-export type ZoneName = 'rooftop' | 'town' | 'greenhouse' | 'apartment';
+import type { Neighbor } from './house';
+
+export type Area = 'tower' | 'roof' | 'town';
+export type ZoneName = 'tower' | 'rooftop' | 'town' | 'greenhouse' | 'apartment';
 export type ShopId = 'seed' | 'rootworks' | 'exchange' | 'lab' | 'cafe';
-export type NpcId = 'mira' | 'moss' | 'jun';
+export type NpcId = Resident;
 
 export type Modal =
   | null
-  | { type: 'pause' | 'inventory' | 'avatar' | 'map' | 'calendar' | 'settings' | 'roadmap' | 'sleep' }
+  | { type: 'pause' | 'inventory' | 'avatar' | 'map' | 'calendar' | 'settings' | 'roadmap' | 'sleep' | 'field-notes' | 'cart' | 'warehouse-lease' | 'freight' }
+  | { type: 'house'; room: 'lift' | 'album' | 'fourth-mug' | 'festival' | 'archive' | 'record' | 'doors' | 'commons' | 'town-board' }
+  | { type: 'neighbor'; who: Neighbor; line: string }
   | { type: 'bed'; index: number }
   | { type: 'shop'; shop: ShopId }
-  | { type: 'talk'; npc: NpcId; line: string };
+  | { type: 'talk'; npc: NpcId; line: string }
+  | { type: 'story-page'; page: StoryPage; fromNotes?: boolean };
 
-export type InteractKind = 'bed' | 'door-down' | 'door-up' | 'shop' | 'npc' | 'sleep' | 'wardrobe' | 'radio' | 'rack' | 'planner' | 'board';
+export type InteractKind = 'house' | 'street' | 'neighbor' | 'warehouse-lease' | 'freight' | 'cart' | 'bed' | 'door-down' | 'door-up' | 'shop' | 'npc' | 'sleep' | 'wardrobe' | 'radio' | 'rack' | 'planner' | 'board' | 'story-item';
 
 export interface Interactable {
   id: string;
@@ -29,12 +36,16 @@ export interface Interactable {
   index?: number;
   shop?: ShopId;
   npc?: NpcId;
+  storyItem?: StoryItem;
+  room?: Extract<Modal, {type:'house'}>['room'];
+  who?: Neighbor;
 }
 
 export interface Toast { id: number; text: string; tone: 'good' | 'bad' }
 
 interface UIState {
   inGame: boolean;
+  opening: import('./opening').IntroState | null;
   modal: Modal;
   prompt: Interactable | null;
   toasts: Toast[];
@@ -42,12 +53,13 @@ interface UIState {
   ready: boolean;
   glLost: boolean;
   area: Area;
+  floor: number;
   zone: ZoneName;
 }
 
 let uiState: UIState = {
-  inGame: false, modal: null, prompt: null, toasts: [], fading: false, ready: false, glLost: false,
-  area: 'roof', zone: 'rooftop',
+  inGame: false, opening: null, modal: null, prompt: null, toasts: [], fading: false, ready: false, glLost: false,
+  area: 'roof', zone: 'rooftop', floor: 7,
 };
 const uiListeners = new Set<() => void>();
 export const ui = {
@@ -70,6 +82,10 @@ export function useG<T>(sel: (s: GS) => T): T {
     return v;
   };
   return useSyncExternalStore(game.subscribe, get, get);
+}
+
+export function useHudVisible() {
+  return useG(s => s.settings.showHud ?? !window.matchMedia('(pointer: coarse)').matches);
 }
 
 export function openModal(m: Modal) { ui.set({ modal: m }); if (m) sfx.open(); }
@@ -95,7 +111,7 @@ export function act(fn: () => unknown, quiet = false): boolean {
   return true;
 }
 
-export const player = { x: 0, z: 4, yaw: Math.PI, speed: 0 };
+export const player = { y: 0, x: 0, z: 4, yaw: Math.PI, speed: 0 };
 export const joy = { x: 0, y: 0 };
 export const npcPos: Record<NpcId, { x: number; z: number; yaw: number; speed: number; area: Area }> = {
   mira: { x: 2.5, z: 2, yaw: 0, speed: 0, area: 'roof' },
@@ -116,4 +132,4 @@ export const fx = {
   },
 };
 
-export const camCtl = { yawOffset: 0 };
+export const camCtl = { yawOffset: 0, pitch: -0.15, dragging: false, manualUntil: 0, walk: newWalkHeading() };

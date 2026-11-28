@@ -1,106 +1,100 @@
-import { memo, useMemo, useRef } from 'react';
+import { SurfaceBlock, surface } from './Surfaces';
+import botanical from '../assets/surfaces/botanical.webp';
+import { cropGeometry } from './cropGeometry';
+import { SolidSurfaces } from './SolidSurfaces';
+import { memo, useMemo, useRef, useEffect, useLayoutEffect } from 'react';
 import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 import { SEEDS } from '@/game/store';
 import { useG } from '@/game/runtime';
 import { BEDS } from '@/game/world';
 import { mat } from '@/scene/materials';
+import { getPlotStatus, type PlotStatus } from '@/game/plotStatus';
+import { PlotStatusMarker } from './PlotStatusMarker';
 
-interface BedView { strain: string | null; growth: number; water: number; health: number; fed: boolean }
+interface BedView { strain: string | null; growth: number; water: number; health: number; fed: boolean; status: PlotStatus }
 
 export function Beds() {
+  useFrame(state => { wind.value = state.clock.elapsedTime; });
   const plots = useG(s => s.plots.map(p => ({
     strain: p.strain, growth: Math.min(100, Math.floor(p.growth / 4) * 4), water: Math.round(p.water / 10) * 10,
-    health: Math.round(p.health / 10) * 10, fed: p.fed,
+    health: Math.round(p.health / 10) * 10, fed: p.fed, status: getPlotStatus(p),
   })));
   const bigBeds = useG(s => s.upgrades.includes('beds'));
   return (
     <>
-      {BEDS.map(b => (
-        <Bed key={b.index} x={b.x} z={b.z} big={bigBeds} {...(plots[b.index] ?? { strain: null, growth: 0, water: 0, health: 100, fed: false })} />
+      {BEDS.slice(0, plots.length).map(b => (
+        <Bed key={b.index} x={b.x} z={b.z} big={bigBeds} {...(plots[b.index] ?? { strain: null, growth: 0, water: 0, health: 100, fed: false, status: 'empty' })} />
       ))}
     </>
   );
 }
 
-const Bed = memo(function Bed({ x, z, big, strain, growth, water, health, fed }: BedView & { x: number; z: number; big: boolean }) {
-  const soil = useMemo(() => new THREE.Color('#c79a68').lerp(new THREE.Color('#3f2a1f'), water / 100).getStyle(), [water]);
+const Bed = memo(function Bed({ x, z, big, strain, growth, water, health, fed, status }: BedView & { x: number; z: number; big: boolean }) {
+  const soil = useMemo(() => new THREE.Color('#ffefce').lerp(new THREE.Color('#958371'), water / 100).getStyle(), [water]);
   const seed = SEEDS.find(s => s.id === strain);
-  const ready = !!strain && growth >= 100;
   return (
     <group position={[x, 0, z]}>
-      <mesh position={[0, 0.3, 0]} material={mat(big ? '#1f9e89' : '#f2703f')} castShadow receiveShadow>
-        <boxGeometry args={[2.6, 0.6, 1.6]} />
+      <SolidSurfaces revision={String(big)}>
+        {[-0.77, 0.77].map(z => [0.17, 0.44].map((y, i) => (
+          <SurfaceBlock key={z+'/'+y} at={[0,y,z]} size={[2.6,0.26,0.075]} finish="cedar" color={i?'#e3c29e':'#d6b08c'}/>
+        )))}
+        {[-1.26,1.26].map(x => <SurfaceBlock key={x} at={[x,0.29,0]} size={[0.08,0.56,1.52]} finish="cedar" />)}
+        {[-1.25,1.25].map(x => [-0.77,0.77].map(z => <mesh key={x+'/'+z} position={[x,0.30,z]}
+          material={mat(big ? '#405947' : '#514738')}><boxGeometry args={[0.12,0.59,0.11]} /></mesh>))}
+      </SolidSurfaces>
+      <mesh position={[0, 0.52, 0]} material={surface('loam',soil)} receiveShadow>
+        <boxGeometry args={[2.46, 0.06, 1.46]} />
       </mesh>
-      <mesh position={[0, 0.62, 0]} material={mat('#fff7e8')}>
-        <boxGeometry args={[2.7, 0.08, 1.7]} />
-      </mesh>
-      <mesh position={[0, 0.63, 0]} material={mat(soil)}>
-        <boxGeometry args={[2.35, 0.06, 1.35]} />
-      </mesh>
-      {fed && [-0.8, 0, 0.8].map(px => (
-        <mesh key={px} position={[px, 0.68, 0.45]} material={mat('#8a5a3b')}><icosahedronGeometry args={[0.07, 0]} /></mesh>
-      ))}
-      {seed && [-0.75, 0, 0.75].map((px, i) => (
-        <Plant key={px} x={px} growth={growth} health={health} color={seed.color} ready={ready} offset={i} />
-      ))}
-      {strain && (ready || water < 30 || health < 40) && (
-        <Flag y={growth >= 60 ? 2.6 : 1.7} color={ready ? '#fbd255' : water < 30 ? '#4fb3e8' : '#ef6f7c'} />
-      )}
+      {fed && <mesh position={[0.8,0.56,0.48]} material={mat('#876643')}><icosahedronGeometry args={[0.06,0]}/></mesh>}
+      {seed && <CropRow strain={seed.id} growth={growth} health={health} />}
+      <PlotStatusMarker status={status} />
     </group>
   );
 });
 
-function Plant({ x, growth, health, color, ready, offset }: { x: number; growth: number; health: number; color: string; ready: boolean; offset: number }) {
-  const g = useRef<THREE.Group>(null);
-  useFrame(st => {
-    if (g.current) g.current.rotation.z = Math.sin(st.clock.elapsedTime * 1.3 + offset * 1.7 + x) * 0.05;
+const botanicalMap = new THREE.TextureLoader().load(botanical);
+botanicalMap.colorSpace = THREE.SRGBColorSpace;
+botanicalMap.anisotropy = 4;
+export const foliage = new THREE.MeshLambertMaterial({ map: botanicalMap, vertexColors: true, side: THREE.DoubleSide, alphaTest: 0.38 });
+const wind = { value: 0 };
+foliage.onBeforeCompile = shader => {
+  shader.uniforms.cropTime = wind;
+  shader.vertexShader = 'uniform float cropTime;\n' + shader.vertexShader.replace('#include <begin_vertex>',
+    `#include <begin_vertex>
+     #ifdef USE_INSTANCING
+     transformed.x += 0.018 * position.y * position.y * sin(cropTime * 1.6 + instanceMatrix[3].x * 2.0 + modelMatrix[3].z);
+     #endif
+     `);
+};
+const mobileCrops = window.matchMedia('(pointer: coarse)').matches;
+const dummy = new THREE.Object3D();
+function CropRow({ strain, growth, health }: { strain: string; growth: number; health: number }) {
+  const stage = growth < 6 ? 0 : growth < 25 ? 1 : growth < 60 ? 2 : growth < 88 ? 3 : 4;
+  const tired = health < 40;
+  const geometry = useMemo(() => cropGeometry(stage, strain, tired), [stage, strain, tired]);
+  const coarse = useMemo(() => cropGeometry(stage,strain,tired,true), [stage,strain,tired]);
+  const center = useMemo(() => new THREE.Vector3(), []);
+  const row = useRef<THREE.InstancedMesh>(null);
+  useEffect(() => () => geometry.dispose(), [geometry]);
+  useEffect(() => () => coarse.dispose(), [coarse]);
+  useFrame(({camera}) => {
+    const plants = row.current;
+    if (!plants) return;
+    plants.getWorldPosition(center);
+    plants.geometry = center.distanceToSquared(camera.position) > 20 ? coarse : geometry;
   });
-  const leaf = useMemo(() => new THREE.Color('#5dbb4a').lerp(new THREE.Color('#d8b04a'), Math.max(0, (60 - health) / 60)).getStyle(), [health]);
-  const s = growth < 6 ? 0 : 0.25 + (Math.min(growth, 100) / 100) * 0.85;
-  if (growth < 6) {
-    return <mesh position={[x, 0.7, 0]} material={mat('#6b4a33')}><icosahedronGeometry args={[0.12, 0]} /></mesh>;
-  }
-  const tiers = growth < 25 ? 1 : growth < 60 ? 2 : 3;
-  return (
-    <group ref={g} position={[x, 0.66, 0]} scale={s}>
-      <mesh position={[0, 0.6, 0]} material={mat('#4a8a3a')}><cylinderGeometry args={[0.04, 0.06, 1.2, 5]} /></mesh>
-      {Array.from({ length: tiers }).map((_, t) => (
-        <group key={t} position={[0, 0.35 + t * 0.38, 0]} rotation-y={t * 0.8 + offset}>
-          {[0, 1, 2, 3, 4].map(k => (
-            <mesh key={k} rotation={[0.9, (k / 5) * Math.PI * 2, 0]} position={[Math.sin((k / 5) * Math.PI * 2) * 0.22, 0, Math.cos((k / 5) * Math.PI * 2) * 0.22]} material={mat(leaf)} castShadow>
-              <octahedronGeometry args={[0.2 - t * 0.03, 0]} />
-            </mesh>
-          ))}
-        </group>
-      ))}
-      {growth >= 60 && (
-        <>
-          <mesh position={[0, 1.38, 0]} material={ready ? budGlow(color) : mat(color)}><icosahedronGeometry args={[0.2, 0]} /></mesh>
-          {[0, 2.1, 4.2].map(a => (
-            <mesh key={a} position={[Math.sin(a) * 0.2, 0.95, Math.cos(a) * 0.2]} material={ready ? budGlow(color) : mat(color)}><icosahedronGeometry args={[0.12, 0]} /></mesh>
-          ))}
-        </>
-      )}
-    </group>
-  );
-}
-
-const glowCache = new Map<string, THREE.MeshStandardMaterial>();
-function budGlow(c: string) {
-  let m = glowCache.get(c);
-  if (!m) { m = new THREE.MeshStandardMaterial({ color: c, emissive: c, emissiveIntensity: 0.45, flatShading: true }); glowCache.set(c, m); }
-  return m;
-}
-
-function Flag({ y, color }: { y: number; color: string }) {
-  const r = useRef<THREE.Mesh>(null);
-  useFrame(st => {
-    if (r.current) { r.current.rotation.y = st.clock.elapsedTime * 2; r.current.position.y = y + Math.sin(st.clock.elapsedTime * 3) * 0.12; }
-  });
-  return (
-    <mesh ref={r} position={[0, y, 0]} material={mat(color, 0.4)}>
-      <octahedronGeometry args={[0.2, 0]} />
-    </mesh>
-  );
+  useLayoutEffect(() => {
+    const plants = row.current!;
+    for (let i = 0; i < 3; i++) {
+      dummy.position.set((i-1)*0.78,0.55,i === 1 ? -0.07 : 0.08);
+      dummy.rotation.set(0, i*2.16, (i-1)*0.035);
+      dummy.scale.setScalar(0.94+i*0.06);
+      dummy.updateMatrix();
+      plants.setMatrixAt(i,dummy.matrix);
+    }
+    plants.instanceMatrix.needsUpdate = true;
+    plants.computeBoundingSphere();
+  }, [geometry]);
+  return <instancedMesh ref={row} args={[geometry, foliage, 3]} castShadow={!mobileCrops} receiveShadow={!mobileCrops} />;
 }

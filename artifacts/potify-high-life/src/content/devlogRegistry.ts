@@ -104,7 +104,7 @@ export const devlogSections: RegistrySection[] = [
     title: 'NPCs and relationships',
     intro: 'The people who live here have their own work, words and reasons to come back.',
     entries: [
-      { id: 'NPC-001', title: 'Mira at Seed & Signal', detail: 'A neighbor who welcomes new growers and knows the quarter’s stories.', status: inDev },
+      { id: 'NPC-001', title: 'Mira at Seed & Signal', detail: 'Mira keeps a Moonmint packet on the counter. Look closely, then stop in on a later day to see what you remember.', status: 'Verified Playable' },
       { id: 'NPC-002', title: 'Moss at Rootworks', detail: 'A soil-minded shopkeeper whose practical advice has a poetic streak.', status: inDev },
       { id: 'NPC-003', title: 'Jun and the Low Tide radio', detail: 'An archivist-musician with changing lines and a growing friendship.', status: inDev },
       { id: 'NPC-004', title: 'Shylo, an occasional neighborhood companion', detail: 'A Norwegian Elkhound in a few quiet moments, never the center of the story.', status: concept },
@@ -157,7 +157,7 @@ export const devlogSections: RegistrySection[] = [
     title: 'Festivals and social features',
     intro: 'Shared neighborhood traditions can make the calendar feel lived in.',
     entries: [
-      { id: 'SOC-001', title: 'A changing community noticeboard', detail: 'Small updates and optional errands can give familiar streets new texture.', status: concept },
+      { id: 'SOC-001', title: 'A changing community noticeboard', detail: 'Signed landing notices and the market board follow local harvests, deliveries and seasonal gatherings.', status: inDev },
       { id: 'SOC-002', title: 'Seasonal gathering days', detail: 'Future local events are planned as fictional social moments.', status: concept },
       { id: 'SOC-003', title: 'Friendship that takes time', detail: 'Current relationships grow through conversations; richer story arcs are planned.', status: inDev },
     ],
@@ -167,7 +167,7 @@ export const devlogSections: RegistrySection[] = [
     title: 'Audio and marketing',
     intro: 'The soundscape belongs to the neighborhood and its quieter hours.',
     entries: [
-      { id: 'AUDIO-001', title: 'A soft rooftop radio', detail: 'Original in-game music can be toggled from settings.', status: inDev },
+      { id: 'AUDIO-001', title: 'POTIFY radio', detail: 'The rooftop radio and Low Tide play The Soil Remembers (Grow Room Version) from the First Cycle edition.', status: inDev },
       { id: 'AUDIO-002', title: 'Small sounds for everyday actions', detail: 'Movement and interactions use light synthesized effects.', status: inDev },
       { id: 'AUDIO-003', title: 'Concept imagery stays labeled', detail: 'Any teaser stays marked as in development until its claims are verified.', status: inDev },
     ],
@@ -205,6 +205,13 @@ export const devlogSections: RegistrySection[] = [
 ];
 
 export const devlogChangelog = [
+  {
+    date: '2026-11-27',
+    version: 'Canopy Quarter playtest',
+    title: 'The Fold at Seed & Signal',
+    body: 'Mira’s Moonmint packet is a small 3D prop on the shop counter. Two close views let you see the marks her hands have left in the paper. Your observation stays in your save between visits. A familiar piece of shop paper also turns up in Tessa’s kitchen.',
+    status: 'Verified Playable' as const,
+  },
   {
     date: '2026-11-04',
     version: 'v0.1 · First rooftop build',
