@@ -1,21 +1,23 @@
 import { useRef, useSyncExternalStore } from 'react';
 import { game } from '@/game/store';
 import { sfx } from '@/game/audio';
+import type { Resident, StoryItem, StoryPage } from '@/game/story';
 
 export type GS = ReturnType<typeof game.getState>;
 export type Area = 'roof' | 'town';
 export type ZoneName = 'rooftop' | 'town' | 'greenhouse' | 'apartment';
 export type ShopId = 'seed' | 'rootworks' | 'exchange' | 'lab' | 'cafe';
-export type NpcId = 'mira' | 'moss' | 'jun';
+export type NpcId = Resident;
 
 export type Modal =
   | null
-  | { type: 'pause' | 'inventory' | 'avatar' | 'map' | 'calendar' | 'settings' | 'roadmap' | 'sleep' }
+  | { type: 'pause' | 'inventory' | 'avatar' | 'map' | 'calendar' | 'settings' | 'roadmap' | 'sleep' | 'field-notes' }
   | { type: 'bed'; index: number }
   | { type: 'shop'; shop: ShopId }
-  | { type: 'talk'; npc: NpcId; line: string };
+  | { type: 'talk'; npc: NpcId; line: string }
+  | { type: 'story-page'; page: StoryPage; fromNotes?: boolean };
 
-export type InteractKind = 'bed' | 'door-down' | 'door-up' | 'shop' | 'npc' | 'sleep' | 'wardrobe' | 'radio' | 'rack' | 'planner' | 'board';
+export type InteractKind = 'bed' | 'door-down' | 'door-up' | 'shop' | 'npc' | 'sleep' | 'wardrobe' | 'radio' | 'rack' | 'planner' | 'board' | 'story-item';
 
 export interface Interactable {
   id: string;
@@ -29,6 +31,7 @@ export interface Interactable {
   index?: number;
   shop?: ShopId;
   npc?: NpcId;
+  storyItem?: StoryItem;
 }
 
 export interface Toast { id: number; text: string; tone: 'good' | 'bad' }

@@ -1,4 +1,5 @@
 import { useSyncExternalStore } from 'react';
+import { chooseStory, freshStory, readStory, validateStory, type ChoiceId, type Resident, type StoryItem, type StoryProgress } from './story.ts';
 
 export type Zone = 'rooftop' | 'town' | 'greenhouse' | 'apartment';
 export interface Plot {
@@ -49,6 +50,7 @@ export interface GameState {
     upgraded: boolean;
     rewarded: boolean;
   };
+  story: StoryProgress;
   position: { x: number; z: number; zone: Zone };
   settings: Settings;
   savedAt: number;
@@ -89,6 +91,7 @@ function freshState(): GameState {
     upgrades: [], friendship: { mira: 0, moss: 0, jun: 0 },
     lastTalkDay: {},
     quest: { met: false, bought: false, planted: false, watered: false, harvested: false, sold: false, upgraded: false, rewarded: false },
+    story: freshStory(),
     position: { x: 0, z: 4, zone: 'rooftop' },
     settings: { muted: false, music: true, camera: 1, quality: 'high' },
     savedAt: 0, saveError: null, totalSold: 0,
@@ -101,8 +104,10 @@ const object = (v: unknown): v is Record<string, unknown> => !!v && typeof v ===
 const validColor = (v: unknown): v is string => typeof v === 'string' && /^#[0-9a-f]{6}$/i.test(v);
 const seedExists = (id: string) => SEEDS.some(s => s.id === id);
 
-/** Reject corrupt/incompatible saves instead of silently destroying them. */
-export function validateSave(value: unknown): value is GameState {
+type SavedGame = Omit<GameState, 'story'> & { story?: StoryProgress };
+
+/** Accept earlier v1 saves and reject corrupt saves before writing anything. */
+export function validateSave(value: unknown): value is SavedGame {
   if (!object(value) || value.version !== 1) return false;
   const s = value;
   if (typeof s.started !== 'boolean' || typeof s.acknowledged !== 'boolean' ||
@@ -125,7 +130,7 @@ export function validateSave(value: unknown): value is GameState {
   if (!object(s.friendship) || !Object.values(s.friendship).every(v => finite(v, 0, 100)) ||
       !object(s.lastTalkDay) || !Object.values(s.lastTalkDay).every(v => finite(v, 1))) return false;
   if (!object(s.quest) || Object.keys(freshState().quest).some(k => typeof (s.quest as Record<string, unknown>)[k] !== 'boolean')) return false;
-  return true;
+  return s.story === undefined || validateStory(s.story, s.quest.sold === true);
 }
 
 function load(): GameState {
@@ -136,7 +141,7 @@ function load(): GameState {
     if (!raw) return initial;
     const parsed: unknown = JSON.parse(raw);
     if (!validateSave(parsed)) return { ...initial, saveError: 'Your saved game could not be read. It has not been overwritten. Reset from settings to start fresh.' };
-    return { ...parsed, saveError: null };
+    return { ...parsed, story: parsed.story ?? initial.story, saveError: null };
   } catch {
     return { ...initial, saveError: 'Local save storage is unavailable or unreadable. Progress cannot be saved until browser storage is available.' };
   }
@@ -322,6 +327,24 @@ export const game = {
     commit({ ...state, friendship: { ...state.friendship, [id]: clamp(friendship + (already ? 0 : 10)) },
       lastTalkDay: { ...state.lastTalkDay, [id]: state.day }, quest: id === 'mira' ? questWith('met') : state.quest });
     return `${line}${already ? ' Come say hello again tomorrow.' : ' (+10 friendship)'}`;
+  },
+  readStoryItem(item: StoryItem): void {
+    if (saveLocked) return;
+    const story = readStory(state.story, item);
+    if (story !== state.story) commit({ ...state, story });
+  },
+  chooseStoryReply(resident: Resident, id: ChoiceId) {
+    if (saveLocked) return null;
+    const change = chooseStory(state.story, resident, id, state.quest.sold);
+    if (!change) return null;
+    const next = { ...state, story: change.story };
+    switch (change.reward) {
+      case 'latch': next.supplies += 1; break;
+      case 'signal': next.money = cents(next.money + 3); break;
+      case 'ledger': next.seeds = { ...next.seeds, moonmint: next.seeds.moonmint + 1 }; break;
+    }
+    commit(next);
+    return { message: change.message, reply: change.reply };
   },
   sleep(): string {
     const plants = advancePlants(60);

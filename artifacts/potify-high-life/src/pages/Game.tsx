@@ -13,8 +13,10 @@ function useHotkeys() {
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       unlockAudio();
-      const tag = (e.target as HTMLElement)?.tagName;
+      const target = e.target instanceof Element ? e.target : null;
+      const tag = target?.tagName;
       if (tag === 'INPUT' || tag === 'TEXTAREA') return;
+      if ((e.code === 'Enter' || e.code === 'Space') && target?.closest('button, a[href]')) return;
       const u = ui.get();
       if (!u.inGame) return;
       if (e.code === 'Escape' || e.code === 'KeyP') { if (u.modal) closeModal(); else openModal({ type: 'pause' }); return; }

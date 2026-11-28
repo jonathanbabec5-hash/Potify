@@ -52,6 +52,8 @@ function Shop({ id }: { id: ShopKey }) {
       {id === 'exchange' && (
         <group position={[2.6, 0, d / 2 + 1.2]}>
           <mesh position={[0, 0.5, 0]} material={mat('#c7774f')}><boxGeometry args={[1.6, 1, 0.8]} /></mesh>
+          <mesh position={[0.45, 0.66, 0.421]} rotation-z={-0.14} material={mat('#f1dbab')}><boxGeometry args={[0.24, 0.33, 0.04]} /></mesh>
+          <mesh position={[0.44, 0.82, 0.45]} material={mat('#6c4c37')}><torusGeometry args={[0.04, 0.012, 4, 8]} /></mesh>
           {[-0.4, 0, 0.4].map((x, i) => (
             <mesh key={x} position={[x, 1.15, 0]} material={mat(['#a6ce56', '#9dbce8', '#e7b65f'][i])}><icosahedronGeometry args={[0.2, 0]} /></mesh>
           ))}
