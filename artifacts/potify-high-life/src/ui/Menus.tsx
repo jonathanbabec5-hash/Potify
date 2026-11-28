@@ -1,6 +1,7 @@
 import { readHeadLook } from '@/game/appearance';
 import { PacketInspection } from '@/ui/PacketInspection';
 import { HairOptions } from '@/ui/HairOptions';
+import { RoofWorksConfirmPanel } from '@/ui/RoofWorksConfirmPanel';
 import { ResidentView } from '@/scene/ResidentView';
 import { lastFrameReport } from '@/game/frameBudget';
 import { houseDate } from '@/game/house';
@@ -215,20 +216,42 @@ function RoofWorks() {
   const sold = useG(s => s.quest.sold);
   const projects = useG(s => s.projects);
   const balance = useG(s => s.money);
+  const [review, setReview] = useState<{ id: RoofProject; projectCount: number } | null>(null);
+  const [showSlipPrompt, setShowSlipPrompt] = useState(false);
   const cost = projectPrice(projects.length);
   const firstJob = PROJECTS[projects[0]];
+  const confirmJob = () => {
+    if (!review) return;
+    const current = game.getState();
+    if (!current.quest.sold || current.projects.length !== review.projectCount ||
+        current.projects.includes(review.id) || current.money < projectPrice(review.projectCount)) {
+      setReview(null);
+      toast('The work order changed. Please review the available jobs again.');
+      return;
+    }
+    if (act(() => game.buildProject(review.id))) {
+      sfx.upgrade();
+      setReview(null);
+      if (review.projectCount === 0) setShowSlipPrompt(true);
+    }
+  };
   return <section className="mt-5 border-t border-ink/30 pt-4">
-    <h3 className="font-display text-xl">Roof 7B works ledger</h3>
+    <h3 className="font-display text-xl">Roofworks · Rooftop projects</h3>
+    <p className="text-sm text-muted-foreground">Roofworks handles the jobs up here. Rootworks is Moss’s soil and tool shop.</p>
     <p className="text-sm my-2">{projects.length === 0
       ? 'Your first market receipt qualifies one building job for the 4 simSOL neighborhood rate. The other job costs 80.'
       : projects.length === 1 ? 'The crew can take a second job for 80 simSOL. The warehouse east of here also accepts lease applications.' : 'Both jobs are signed off. Follow the east quay to the warehouse.'}</p>
     <div className="grid gap-2 sm:grid-cols-2">{(Object.keys(PROJECTS) as RoofProject[]).map(id => <div key={id} className="rounded-xl border border-ink/30 p-3 flex flex-col">
       <h4 className="font-display text-lg">{PROJECTS[id].name}</h4><p className="text-sm grow my-2">{PROJECTS[id].detail}</p>
       <button className="chunk bg-butter px-2 py-2" disabled={!sold || projects.includes(id) || balance < cost}
-        data-testid={`build-${id}`} onClick={() => { if (act(() => game.buildProject(id))) sfx.upgrade(); }}>
-        {projects.includes(id) ? 'Built on your roof' : !sold ? 'Bring a market receipt' : `Build · ${cost} simSOL`}
+        data-testid={`build-${id}`} onClick={() => setReview({ id, projectCount: projects.length })}>
+        {projects.includes(id) ? 'Built on your roof' : !sold ? 'Bring a market receipt' : `Review · ${cost} simSOL`}
       </button>
     </div>)}</div>
+    {review && <RoofWorksConfirmPanel project={review.id} first={review.projectCount === 0}
+      onConfirm={confirmJob} onCancel={() => setReview(null)} />}
+    {showSlipPrompt && firstJob && <p className="mt-3 text-sm" role="status">Mira left a note for you. Turn over her work slip below.</p>}
+    {projects.includes('glasshouse') && <p className="mt-3 text-sm">Rootworks has soil and tools for your new beds.</p>}
     {firstJob && <details className="mt-4 rounded-lg border border-[#a58e67] bg-[#f6ecd6] text-[#38382e]" data-testid="work-slip">
       <summary className="cursor-pointer px-4 py-3 font-bold">Turn over Mira’s work slip</summary>
       <div className="mx-4 mb-4 border-t border-dashed border-[#a58e67] pt-3">
@@ -236,6 +259,9 @@ function RoofWorks() {
         <p className="mt-1 text-sm">First order for 7B · {firstJob.name}</p>
         <blockquote className="my-3 font-serif text-lg italic">{firstJob.pencilNote}</blockquote>
         <p className="text-right text-sm">— {firstJob.signedBy}</p>
+        {projects[0] === 'glasshouse' && <p className="mt-3 inline-block rounded-sm border border-[#718067] px-2 py-1 text-xs font-bold tracking-wide text-[#506548]" data-testid="rootworks-work-stamp">
+          ROOTWORKS · MOSS<br />ROOFWORKS GLASSHOUSE JOB
+        </p>}
       </div>
     </details>}
   </section>;
