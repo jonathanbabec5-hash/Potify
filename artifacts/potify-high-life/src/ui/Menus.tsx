@@ -1,5 +1,6 @@
 import { readHeadLook } from '@/game/appearance';
 import { PacketInspection } from '@/ui/PacketInspection';
+import { PauseGuideCard } from '@/ui/PauseGuideCard';
 import { HairOptions } from '@/ui/HairOptions';
 import { ResidentView } from '@/scene/ResidentView';
 import { lastFrameReport } from '@/game/frameBudget';
@@ -809,6 +810,7 @@ function Pause() {
   ];
   return (
     <Sheet title="Paused" kicker="The clock stops while menus are open" test="modal-pause">
+      <PauseGuideCard />
       <div className="grid gap-2">
         {items.map(([l, fn, k], i) => (
           <button key={l} onClick={fn} className={`chunk py-3 px-4 flex items-center justify-between ${i === 0 ? 'bg-tangerine text-cream' : 'bg-cream'}`} data-testid={`button-pause-${l.toLowerCase().replace(/\W+/g, '-')}`}>
