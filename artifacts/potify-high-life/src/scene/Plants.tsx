@@ -9,26 +9,28 @@ import { SEEDS } from '@/game/store';
 import { useG } from '@/game/runtime';
 import { BEDS } from '@/game/world';
 import { mat } from '@/scene/materials';
+import { getPlotStatus, type PlotStatus } from '@/game/plotStatus';
+import { PlotStatusMarker } from './PlotStatusMarker';
 
-interface BedView { strain: string | null; growth: number; water: number; health: number; fed: boolean }
+interface BedView { strain: string | null; growth: number; water: number; health: number; fed: boolean; status: PlotStatus }
 
 export function Beds() {
   useFrame(state => { wind.value = state.clock.elapsedTime; });
   const plots = useG(s => s.plots.map(p => ({
     strain: p.strain, growth: Math.min(100, Math.floor(p.growth / 4) * 4), water: Math.round(p.water / 10) * 10,
-    health: Math.round(p.health / 10) * 10, fed: p.fed,
+    health: Math.round(p.health / 10) * 10, fed: p.fed, status: getPlotStatus(p),
   })));
   const bigBeds = useG(s => s.upgrades.includes('beds'));
   return (
     <>
       {BEDS.slice(0, plots.length).map(b => (
-        <Bed key={b.index} x={b.x} z={b.z} big={bigBeds} {...(plots[b.index] ?? { strain: null, growth: 0, water: 0, health: 100, fed: false })} />
+        <Bed key={b.index} x={b.x} z={b.z} big={bigBeds} {...(plots[b.index] ?? { strain: null, growth: 0, water: 0, health: 100, fed: false, status: 'empty' })} />
       ))}
     </>
   );
 }
 
-const Bed = memo(function Bed({ x, z, big, strain, growth, water, health, fed }: BedView & { x: number; z: number; big: boolean }) {
+const Bed = memo(function Bed({ x, z, big, strain, growth, water, health, fed, status }: BedView & { x: number; z: number; big: boolean }) {
   const soil = useMemo(() => new THREE.Color('#ffefce').lerp(new THREE.Color('#958371'), water / 100).getStyle(), [water]);
   const seed = SEEDS.find(s => s.id === strain);
   return (
@@ -46,9 +48,7 @@ const Bed = memo(function Bed({ x, z, big, strain, growth, water, health, fed }:
       </mesh>
       {fed && <mesh position={[0.8,0.56,0.48]} material={mat('#876643')}><icosahedronGeometry args={[0.06,0]}/></mesh>}
       {seed && <CropRow strain={seed.id} growth={growth} health={health} />}
-      {strain && <mesh position={[1.07,0.57,0.54]} rotation-x={-0.29} material={mat(water<30?'#79a2a6':health<40?'#ab7954':'#dacba8')}>
-        <boxGeometry args={[0.12,0.23,0.018]}/>
-      </mesh>}
+      <PlotStatusMarker status={status} />
     </group>
   );
 });
