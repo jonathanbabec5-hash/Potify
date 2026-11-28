@@ -7,6 +7,7 @@ import { SolidSurfaces } from './SolidSurfaces';
 import { foliage } from './Plants';
 import { cropGeometry } from './cropGeometry';
 import { PotPlush } from './PotPlush';
+import { ApartmentMorning } from './ApartmentMorning';
 
 type Vec3 = [number,number,number];
 function Frame({ at, size, color = '#39453e' }: { at: Vec3; size: Vec3; color?: string }) {
@@ -65,7 +66,7 @@ function sunPatch() {
 }
 export function WindowLight({ strength }: { strength: number }) {
   if (strength <= 0) return null;
-  return <mesh position={[-4.91,0.024,-2.64]} rotation={[-Math.PI/2,0,-0.36]} renderOrder={1}>
+  return <mesh position={[-4.91,0.035,-2.64]} rotation={[-Math.PI/2,0,-0.36]} renderOrder={1}>
     <planeGeometry args={[2.6,2.75]}/><meshBasicMaterial map={sunPatch()} transparent opacity={strength} depthWrite={false}/>
   </mesh>;
 }
@@ -74,6 +75,7 @@ export function LeaseApartment() {
   const sprig = useMemo(()=>cropGeometry(2,'moonmint',false),[]);
   useEffect(() => () => sprig.dispose(), [sprig]);
   return <>
+    <ApartmentMorning />
     <SolidSurfaces>
       <SurfaceBlock at={[-3.86,0.96,-4.86]} size={[3.82,0.13,1.18]} finish="cedar" tile={1.4}/>
       {[-5.52,-2.24].map(x=>[-5.27,-4.44].map(z=><Frame key={x+'/'+z} at={[x,0.46,z]} size={[0.075,0.9,0.075]}/>))}

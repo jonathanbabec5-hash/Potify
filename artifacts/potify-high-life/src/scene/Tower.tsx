@@ -1,4 +1,5 @@
 import { LeaseApartment, LoftWindows, WindowLight } from './LeaseApartment';
+import { apartmentDaylight } from './apartmentLighting';
 import { SurfaceBlock } from './Surfaces';
 import { SolidSurfaces } from './SolidSurfaces';
 import { useRef } from 'react';
@@ -423,7 +424,7 @@ export function Tower() {
         <Box at={[-3.04, -0.13, -0.15]} size={[11.38, 0.26, 11.58]} color="#988978" />
         <Box at={[5.55, -0.14, 3.42]} size={[5.9, 0.28, 4.84]} color="#8e8374" />
         <SurfaceBlock at={[-3.04,-0.024,-0.15]} size={[11.38,0.065,11.58]} finish="cedar" color="#c9bda7" tile={2.4}/>
-        {floor === 7 && <WindowLight strength={Math.max(0,Math.sin((minute*30-360)*Math.PI/720))*0.36}/>}
+        {floor === 7 && <WindowLight strength={apartmentDaylight(minute)}/>}
         {hasLandingBoard(floor) && (
           <group position={[-5.15, floor === 1 ? 1.8 : 1.7, floor === 1 ? -4.53 : -5.32]}>
             <Box at={[0, 0, 0]} size={[1.12, 0.86, 0.09]} color="#9b794e" />
